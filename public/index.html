@@ -623,13 +623,19 @@ function exTog(id,on){const e=new Set(view.ex||[]);if(on)e.delete(id);else e.add
 function oneSet(k,v){view.one=Object.assign(view.one||{},{[k]:v})}
 function oneTog(id,on){const e=new Set((view.one||{}).sel||[]);if(on)e.add(id);else e.delete(id);oneSet('sel',[...e]);render()}
 function oneAll(m){oneSet('sel',m?S.students.map(x=>x.id):[]);render()}
-const catOpts=v=>`<option value="">분류 자동</option>${Object.entries(CATS).map(([k,x])=>`<option value="${k}" ${v===k?'selected':''}>${x[1]}</option>`).join('')}`;
+// 학생이 통장에 쓸 수 있는 분류와 똑같은 목록 (+ 교사 전용 시스템 분류). 고르면 지급/징수 방향·항목 이름이 자동으로 채워져요.
+const CGRP=[['입금',['adj','comm','wel','dev','merit']],['출금',['fine','right','exJ','exB','exT','snack']],['기타',['taxuse','etc']],['시스템 분류 (자동)',['pay','gig','auction','stock','estate','dep','tax','exempt']]];
+const catOpts=v=>`<option value="">분류 자동</option>${CGRP.map(([g,ks])=>`<optgroup label="${g}">${ks.filter(k=>CATS[k]).map(k=>`<option value="${k}" ${v===k?'selected':''}>${CATS[k][1]}</option>`).join('')}</optgroup>`).join('')}`;
+const catDir=k=>['adj','comm','wel','dev','merit','pay','gig'].includes(k)?'in':'out';
+const catName=k=>EXV[k]?EXV[k].memo:k==='adj'?'잔액 조정':(CATS[k]?CATS[k][1].replace(/^\S+\s/,''):'');
+function oneCat(k){const o=view.one=view.one||{};o.cat=k;if(k){o.dir=catDir(k);if(!(o.name||'').trim()||o.auto)o.name=catName(k),o.auto=1;if(EXV[k])o.amt=exAmt(k)}render()}
+function cartCat(i,k){cartSet(i,'cat',k);if(k){cartSet(i,'dir',catDir(k));const c=view.cart[i];if(!(c.name||'').trim()||c.auto){c.name=catName(k);c.auto=1}if(EXV[k])c.val=exAmt(k)}render()}
 function payHTML(){view.cart=view.cart||{};const ex=new Set(view.ex||[]),ow=ownersSet(),o=view.one||{};
  const chk=i=>`<input type="checkbox" ${(view.cart[i]||{}).on?'checked':''} onchange="cartSet(${i},'on',this.checked)">`;
  const val=i=>`<input type="number" min="0" value="${(view.cart[i]||{}).val??''}" oninput="cartSet(${i},'val',this.value)" style="width:100px" placeholder="구미">`;
  const rows=CART.map((c,i)=>`<tr><td>${chk(i)}</td><td style="text-align:left"><span class="tag tre">🟥 징수</span> ${c}</td><td>${val(i)}</td></tr>`).join('')
  +`<tr><td>${chk(50)}</td><td style="text-align:left"><span class="tag tgr">🟩 지급</span> 💼 직업 급여대로 (배정된 2주급 + <b>소득세 10% 자동 징수</b>, 활동 기간 자동 표기)</td><td class="mut">배정된 급여대로${S.job.paid?' ⚠ 이미 보낸 적 있어요':''}</td></tr>`
- +[100,101].map(i=>{const c=view.cart[i]||{};return `<tr><td>${chk(i)}</td><td style="text-align:left"><input placeholder="직접 입력 항목" value="${esc(c.name||'')}" oninput="cartSet(${i},'name',this.value)" size="14"> <select onchange="cartSet(${i},'dir',this.value)"><option value="out" ${(c.dir||'out')==='out'?'selected':''}>징수</option><option value="in" ${c.dir==='in'?'selected':''}>지급</option></select> <select onchange="cartSet(${i},'cat',this.value)">${catOpts(c.cat)}</select></td><td>${val(i)}</td></tr>`}).join('');
+ +[100,101].map(i=>{const c=view.cart[i]||{};return `<tr><td>${chk(i)}</td><td style="text-align:left"><input placeholder="직접 입력 항목" value="${esc(c.name||'')}" oninput="cartSet(${i},'name',this.value);view.cart[${i}].auto=0" size="14"> <select onchange="cartSet(${i},'dir',this.value)"><option value="out" ${(c.dir||'out')==='out'?'selected':''}>징수</option><option value="in" ${c.dir==='in'?'selected':''}>지급</option></select> <select onchange="cartCat(${i},this.value)">${catOpts(c.cat)}</select></td><td>${val(i)}</td></tr>`}).join('');
  const sel=new Set(o.sel||[]);
  return `<div class="card"><h2>🛒 지급 / 징수 장바구니 (전체 학생 대상)</h2><div class="mut">체크한 항목을 한 번에 처리해요. 빼고 싶은 학생은 아래 「제외할 학생」에서 체크를 풀어요. 승인 없이 통장에 바로 반영돼요.</div>
  <div class="tw"><table><tr><th>선택</th><th>항목</th><th>금액 (구미)</th></tr>${rows}</table></div>
@@ -638,7 +644,7 @@ function payHTML(){view.cart=view.cart||{};const ex=new Set(view.ex||[]),ow=owne
  <div class="row"><button class="s" onclick="exSet('none')">전체 포함</button><button class="s" onclick="exSet('prop')">부동산 소유자 제외</button><button class="s" onclick="exSet('noprop')">부동산 없는 학생 제외</button></div>
  <div class="row">${S.students.map(x=>`<label style="border:2px solid var(--line);border-radius:8px;padding:4px 8px;${ex.has(x.id)?'opacity:.5':''}"><input type="checkbox" ${ex.has(x.id)?'':'checked'} onchange="exTog('${x.id}',this.checked)"> ${esc(x.name)}${ow.has(x.id)?' 🏠':''}</label>`).join('')||'<span class="mut">학생이 없어요</span>'}</div><div class="mut">🏠 = 부동산 소유</div></div>
  <div class="card"><h2>🎯 일회성 지급 / 징수 (학생을 골라서)</h2>
- <div class="row"><select onchange="oneSet('dir',this.value)"><option value="out" ${(o.dir||'out')==='out'?'selected':''}>징수</option><option value="in" ${o.dir==='in'?'selected':''}>지급</option></select><input placeholder="항목 이름 (예: 벌금)" value="${esc(o.name||'')}" oninput="oneSet('name',this.value)" size="16"><input type="number" min="0" placeholder="금액" value="${o.amt??''}" oninput="oneSet('amt',this.value)" style="width:90px"><select onchange="oneSet('cat',this.value)">${catOpts(o.cat)}</select></div>
+ <div class="row"><select onchange="oneSet('dir',this.value)"><option value="out" ${(o.dir||'out')==='out'?'selected':''}>징수</option><option value="in" ${o.dir==='in'?'selected':''}>지급</option></select><input placeholder="항목 이름 (예: 벌금)" value="${esc(o.name||'')}" oninput="oneSet('name',this.value);view.one.auto=0" size="16"><input type="number" min="0" placeholder="금액" value="${o.amt??''}" oninput="oneSet('amt',this.value)" style="width:90px"><select onchange="oneCat(this.value)">${catOpts(o.cat)}</select></div>
  <div class="row"><button class="s" onclick="oneAll(true)">전체 선택</button><button class="s" onclick="oneAll(false)">선택 해제</button>${S.students.map(x=>`<label style="border:2px solid var(--line);border-radius:8px;padding:4px 8px;${sel.has(x.id)?'background:#fff3c4;color:#222':''}"><input type="checkbox" ${sel.has(x.id)?'checked':''} onchange="oneTog('${x.id}',this.checked)"> ${esc(x.name)}</label>`).join('')}</div>
  <div class="row"><button onclick="doOne()">🎯 선택한 학생에게 실행 (${sel.size}명)</button></div></div>`}
 async function doOne(){const o=view.one||{},amt=Math.round(+o.amt),sel=(o.sel||[]).filter(id=>st(id)),dir=o.dir||'out';
