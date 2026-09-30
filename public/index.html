@@ -378,9 +378,10 @@ async function delJob(id){if(!await ask('직업을 삭제할까요?'))return;mut
 function addJob(){const n=$('#jnm').value.trim();if(n)mut(s=>s.jobs.push({id:uid(),dept:$('#jd').value.trim(),name:n,slots:Math.max(1,Math.round(+$('#jsl').value)||1)}))}
 function setPeriod(k,v){mut(s=>{s.job[k]=v})}
 const fmtP=j=>{const f=(j||S.job).from,t=(j||S.job).to,m=x=>(+x.slice(5,7))+'/'+(+x.slice(8,10));return f&&t?m(f)+'~'+m(t):''};
-function salaryCore(s,ids,d){const per=fmtP(s.job);s.assign.filter(a=>ids.includes(a.sid)&&a.pay>0).forEach(a=>{const jn2=s.jobs.find(j=>j.id===a.job)?.name||'직업';addTx(a.sid,`2주급 (${jn2}) ${per}`,'in',a.pay,'ok','teacher',d,'pay');addTx(a.sid,`소득세 (2주급의 10%) ${per}`,'out',Math.round(a.pay*0.1),'ok','teacher',d,'tax')});s.job.paid=true}
+function salaryCore(s,ids,d){const per=fmtP(s.job);d=s.job.to||d; // 통장 거래일은 직업 활동 기간의 마지막 날
+ s.assign.filter(a=>ids.includes(a.sid)&&a.pay>0).forEach(a=>{const jn2=s.jobs.find(j=>j.id===a.job)?.name||'직업';addTx(a.sid,`2주급 (${jn2}) ${per}`,'in',a.pay,'ok','teacher',d,'pay');addTx(a.sid,`소득세 (2주급의 10%) ${per}`,'out',Math.round(a.pay*0.1),'ok','teacher',d,'tax')});s.job.paid=true}
 async function paySalary(){const list=S.assign.filter(a=>a.pay>0);if(!list.length)return toast('보낼 급여가 없어요');if(!fmtP())return toast('직업 활동 기간(일한 2주)을 먼저 입력해 주세요');
- if(!await ask((S.job.paid?'이미 급여를 보냈어요. 한 번 더 보낼까요? ':'')+`${list.length}명에게 2주급을 보내고 소득세 10%를 별도 항목으로 함께 징수할까요?`))return;mut(s=>salaryCore(s,s.assign.map(a=>a.sid),today()))}
+ if(!await ask((S.job.paid?'이미 급여를 보냈어요. 한 번 더 보낼까요? ':'')+`${list.length}명에게 2주급을 보내고 소득세 10%를 별도 항목으로 함께 징수할까요? 통장에는 활동 기간의 마지막 날(${mdD(S.job.to)})로 기록돼요.`))return;mut(s=>salaryCore(s,s.assign.map(a=>a.sid),today()))}
 function jobsTab(){const T=view.teacher,stage=S.job.stage,open=S.mkt.job,td=t=>`<td>${t}</td>`,names=id=>esc(st(id)?.name||'?');
  let h=mktBar('job')+(S.job.from&&S.job.to?`<div class="card">📅 <b>직업 활동 기간 (2주)</b> ${S.job.from.slice(5).replace('-','/')} ~ ${S.job.to.slice(5).replace('-','/')}</div>`:'');
  const offs=S.officers.map(o=>`<span class="tag t2">🏅 ${esc(o.role)} ${esc(o.name)}</span>`).join(' ');
