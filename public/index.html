@@ -151,7 +151,7 @@ function ledger(sid,canAdd){const T=view.teacher;
  let run=0;const rows=S.tx.filter(t=>t.sid===sid).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0).map((t,i)=>{
   if(ok(t))run+=t.type==='in'?t.amt:-t.amt;
   const stt=t.status==='ok'?'<span class="tag tgr">✔ 확인</span>':t.status==='wait'?'<span class="tag tgy">⏳ 승인대기</span>':`<span class="tag tre">🔴 반려</span>${t.reason?` <span class="mut">${esc(t.reason)}</span>`:''}`;
-  return `<tr class="${t.status==='ok'?'':'pend'}"><td>${i+1}</td><td>${t.date.slice(5).replace('-','/')}</td><td style="text-align:left">${catTag(t)} ${esc(t.memo)}</td>${money(t)}<td class="n">${ok(t)?W(run):'-'}</td><td>${stt}</td>${T?`<td style="white-space:nowrap"><button class="s" onclick="editTx('${t.id}')">수정</button> <button class="r" onclick="delTx('${t.id}')">삭제</button></td>`:canAdd?`<td style="white-space:nowrap">${t.status==='wait'&&t.by==='student'?`<button class="s" onclick="editMine('${t.id}')">수정</button> <button class="r" onclick="cancelMine('${t.id}')">취소</button>`:''}</td>`:''}</tr>`}).join('');
+  return `<tr class="${t.status==='ok'?'':'pend'}"><td>${i+1}</td><td>${t.date.slice(5).replace('-','/')}</td><td style="text-align:left">${catTag(t)} ${esc(t.memo)}</td>${money(t)}<td class="n">${ok(t)?W(run):'-'}</td><td>${stt}</td>${T?`<td style="white-space:nowrap"><button class="s" onclick="editTx('${t.id}')">수정</button> <button class="r" onclick="delTx('${t.id}')">삭제</button></td>`:canAdd?`<td style="white-space:nowrap">${t.status==='wait'&&t.by==='student'?`<button class="s" onclick="editMine('${t.id}')">수정</button> <button class="r" onclick="cancelMine('${t.id}')">회수</button>`:''}</td>`:''}</tr>`}).join('');
  return `<div class="card"><div class="top"><b>입출금 통장</b><span>잔액 <span class="bal">${W(bal(sid))}</span></span></div>
  ${(()=>{const b=S.tx.filter(t=>t.sid===sid&&ok(t));const i=b.filter(t=>t.type==='in').reduce((a,t)=>a+t.amt,0),o=b.filter(t=>t.type==='out').reduce((a,t)=>a+t.amt,0);return `<div class="mut">총 입금 ${W(i)} · 총 출금 ${W(o)}</div>`})()}
  <div class="tw"><table><tr><th>차례</th><th>거래일</th><th>내용</th><th>입금</th><th>출금</th><th>잔액</th><th>은행원 확인</th>${T||canAdd?'<th></th>':''}</tr>${rows||`<tr><td colspan="${T||canAdd?8:7}" class="mut">기록이 없어요</td></tr>`}</table></div></div>
@@ -159,6 +159,12 @@ function ledger(sid,canAdd){const T=view.teacher;
  <select id="tt"><option value="in">입금</option><option value="out">출금</option></select><select id="tc" onchange="catPick(this.value)"><option value="">분류 (선택)</option><optgroup label="입금"><option value="adj">잔액 조정</option><option value="comm">공동체 생활</option><option value="wel">복지비</option><option value="dev">자기 계발</option><option value="merit">우수 활동</option></optgroup><optgroup label="출금"><option value="fine">벌금</option><option value="right">권리 구매</option><option value="exJ">주글 면제권</option><option value="exB">독서록 면제권</option><option value="exT">오늘하루 면제권</option><option value="snack">간식 구매</option></optgroup><optgroup label="기타"><option value="taxuse">세금 사용처</option><option value="etc">기타</option></optgroup></select><input id="ta" type="number" min="0" placeholder="금액" style="width:110px"><button onclick="addMine()">기록 제출</button></div>
  <div class="mut">선생님이 확인하면 잔액에 반영돼요.</div></div>`:''}`}
 // 학생: 승인대기 중인 내 기록만 수정·취소할 수 있어요 (승인/반려된 기록은 못 고쳐요)
+// 학생: 「승인 대기」 탭 — 내가 낸 요청 중 아직 승인 전인 것을 모아 보고 수정·회수해요
+const myPend=()=>({tx:S.tx.filter(x=>x.sid===me&&x.status==='wait'&&x.by==='student'),dep:S.deps.filter(d=>d.sid===me&&d.status==='wait')});
+function pendTab(){const P=myPend(),rows=P.tx.slice().sort((a,b)=>a.date<b.date?1:-1).map(x=>`<tr><td>${x.date.slice(5).replace('-','/')}</td><td style="text-align:left">${catTag(x)} ${esc(x.memo)}</td><td class="n ${x.type==='in'?'in':'out'}">${x.type==='in'?'+':'-'}${W(x.amt)}</td><td style="white-space:nowrap"><button class="s" onclick="editMine('${x.id}')">수정</button> <button class="r" onclick="cancelMine('${x.id}')">회수</button></td></tr>`).join('');
+ const drows=P.dep.map(d=>`<tr><td>${d.start.slice(5).replace('-','/')}</td><td style="text-align:left"><span class="tag t1">🟧 정기예금 ${d.rate||10}% · ${d.weeks||4}주</span></td><td class="n out">-${W(d.amt)}</td><td><button class="r" onclick="cancelDep('${d.id}')">회수</button></td></tr>`).join('');
+ return `<div class="card"><b>⏳ 승인 대기 중인 내 요청</b><div class="mut">선생님이 승인하기 전까지 고치거나 되돌려 가져올(회수) 수 있어요. 승인·반려된 기록은 입출금 통장에서 확인해요.</div><div class="tw"><table><tr><th>날짜</th><th>내용</th><th>금액</th><th></th></tr>${rows+drows||'<tr><td colspan="4" class="mut">승인 대기 중인 요청이 없어요 🎉</td></tr>'}</table></div></div>`}
+async function cancelDep(id){const d=S.deps.find(x=>x.id===id);if(!d||d.sid!==me||d.status!=='wait')return toast('승인대기 중인 예금만 회수할 수 있어요');if(!await ask('예금 가입 신청을 회수할까요?'))return;await mut(s=>{s.deps=s.deps.filter(x=>!(x.id===id&&x.sid===me&&x.status==='wait'))});toast('회수했어요')}
 const MYCATS=['adj','comm','wel','dev','merit','fine','right','exJ','exB','exT','snack','taxuse','etc'];
 async function editMine(id){const t=S.tx.find(x=>x.id===id);if(!t||t.sid!==me||t.status!=='wait')return toast('승인대기 중인 기록만 고칠 수 있어요');
  const opts=[['','분류 (선택)']].concat((MYCATS.includes(t.cat)||!t.cat?MYCATS:[t.cat].concat(MYCATS)).map(k=>[k,(CATS[k]||['',k])[1]]));
@@ -166,8 +172,8 @@ async function editMine(id){const t=S.tx.find(x=>x.id===id);if(!t||t.sid!==me||t
  if(!v)return;const a=Math.round(+v.amt);if(!(a>0)||!v.memo.trim())return toast('내용과 금액을 확인해 주세요');
  if(EXV[v.cat]){if(v.type!=='out')return toast('면제권은 출금으로 기록해요');const why=exCheck(me,v.cat,v.date||today(),id);if(why)return toast(why)}
  await mut(s=>{const x=s.tx.find(y=>y.id===id);if(!x||x.sid!==me||x.status!=='wait')return;Object.assign(x,{date:v.date,memo:v.memo.trim(),type:v.type,amt:a});if(v.cat)x.cat=v.cat;else delete x.cat});toast('고쳤어요. 선생님 승인을 기다려요')}
-async function cancelMine(id){const t=S.tx.find(x=>x.id===id);if(!t||t.sid!==me||t.status!=='wait')return toast('승인대기 중인 기록만 취소할 수 있어요');
- if(!await ask(`「${t.memo}」 제출을 취소할까요? 기록이 사라져요.`))return;await mut(s=>{s.tx=s.tx.filter(x=>!(x.id===id&&x.sid===me&&x.status==='wait'))});toast('취소했어요')}
+async function cancelMine(id){const t=S.tx.find(x=>x.id===id);if(!t||t.sid!==me||t.status!=='wait')return toast('승인대기 중인 기록만 회수할 수 있어요');
+ if(!await ask(`「${t.memo}」 제출을 회수할까요? 기록이 사라져요.`))return;await mut(s=>{s.tx=s.tx.filter(x=>!(x.id===id&&x.sid===me&&x.status==='wait'))});toast('회수했어요')}
 function catPick(v){if(v==='adj'){$('#tt').value='in';if(!$('#tm').value.trim())$('#tm').value='잔액 조정 (2학기 시작 전 통장 잔액)'}else if(['comm','wel','dev','merit'].includes(v))$('#tt').value='in';else if(['fine','right','snack','taxuse'].includes(v))$('#tt').value='out';else if(EXV[v]){$('#tt').value='out';$('#tm').value=EXV[v].memo;$('#ta').value=exAmt(v)}}
 function addByTeacher(sid){const amt=+$('#ta').value,m=$('#tm').value.trim();if(!(amt>0)||!m)return toast('내용과 금액을 적어요');const d=$('#td').value||today(),ty=$('#tt').value,c=$('#tc').value;mut(s=>addTx(sid,m,ty,amt,'ok','teacher',d,c||undefined));toast('기록했어요')}
 function addMine(){const amt=+$('#ta').value,m=$('#tm').value.trim();if(!(amt>0)||!m)return toast('내용과 금액을 적어요');
@@ -184,8 +190,10 @@ function deposits(sid,canAdd){
 function pickDp(v){view.dp=v;render()}
 function reqDep(){const a=Math.round(+$('#da').value),[rt,wk]=(view.dp||'10,4').split(',').map(Number);if(!(a>0))return toast('금액을 적어요');if(a>bal(me))return toast('잔액이 부족해요');const sd=($('#dd3')&&$('#dd3').value)||today();mut(s=>s.deps.push({id:uid(),sid:me,amt:a,rate:rt,weeks:wk,start:sd,status:'wait'}))}
 const mdD=x=>(+x.slice(5,7))+'/'+(+x.slice(8,10)),depEnd=d=>new Date(new Date(d.start).getTime()+(d.weeks||4)*7*864e5).toISOString().slice(0,10);
-function matureApply(s,id){const d=s.deps.find(x=>x.id===id);if(!d||d.status!=='active')return;const rt=d.rate||10,it=Math.round(d.amt*rt/100);d.status='done';addTx(d.sid,`정기예금 만기 (원금 ${d.amt}+이자 ${it}, ${rt}%·${d.weeks||4}주) 가입기간 ${mdD(d.start)}~${mdD(depEnd(d))}`,'in',d.amt+it,'ok','teacher')}
-const dueDeps=()=>S.deps.filter(d=>d.status==='active'&&depEnd(d)<=today());
+// 만기 거래일 = 가입 기간의 마지막 날 (토·일이면 다음 월요일)
+function matDate(d){const e=depEnd(d),dt=new Date(e+'T00:00:00Z'),w=dt.getUTCDay();if(w===6)dt.setUTCDate(dt.getUTCDate()+2);else if(w===0)dt.setUTCDate(dt.getUTCDate()+1);return dt.toISOString().slice(0,10)}
+function matureApply(s,id){const d=s.deps.find(x=>x.id===id);if(!d||d.status!=='active')return;const rt=d.rate||10,it=Math.round(d.amt*rt/100);d.status='done';addTx(d.sid,`정기예금 만기 (원금 ${d.amt}+이자 ${it}, ${rt}%·${d.weeks||4}주) 가입기간 ${mdD(d.start)}~${mdD(depEnd(d))}`,'in',d.amt+it,'ok','teacher',matDate(d))}
+const dueDeps=()=>S.deps.filter(d=>d.status==='active'&&matDate(d)<=today());
 function matureNow(id){return mut(s=>matureApply(s,id))}
 async function matureDep(id){if(!await ask('만기 금액을 통장으로 지급할까요?'))return;mut(s=>matureApply(s,id))}
 const stk=id=>S.stocks.find(x=>x.id===id),nm=id=>esc(st(id)?.name||'발행사');
@@ -575,8 +583,8 @@ function aucTab(){const T=view.teacher,nn=id=>esc(st(id)?.name||'?');
 function studentHTML(){const s=st(me);
  return `<div class="top"><h1>🍠 ${esc(s.name)}의 통장${roleOf(me)?` <span class="tag t2">🏅 ${roleOf(me)}</span>`:''}</h1><button class="s" onclick="logout()">나가기</button></div>
  ${assetCard(me)}
- ${tabsHTML([['ledger','입출금 통장'],['dep','예금'],['cat','수입처·소비처'],['job','직업'],['stock','주식'],['prop','부동산'],['gig','아르바이트'],['auction','경매']])}
- ${view.tab==='ledger'?ledger(me,true):view.tab==='dep'?deposits(me,true):view.tab==='prop'?props(me,true):view.tab==='job'?jobsTab():view.tab==='gig'?gigTab():view.tab==='auction'?aucTab():view.tab==='cat'?catTab():stocks(me,true)}`}
+ ${tabsHTML([['ledger','입출금 통장'],['pending','승인 대기'+(myPend().tx.length+myPend().dep.length?` (${myPend().tx.length+myPend().dep.length})`:'')],['dep','예금'],['cat','수입처·소비처'],['job','직업'],['stock','주식'],['prop','부동산'],['gig','아르바이트'],['auction','경매']])}
+ ${view.tab==='ledger'?ledger(me,true):view.tab==='pending'?pendTab():view.tab==='dep'?deposits(me,true):view.tab==='prop'?props(me,true):view.tab==='job'?jobsTab():view.tab==='gig'?gigTab():view.tab==='auction'?aucTab():view.tab==='cat'?catTab():stocks(me,true)}`}
 
 function teacherHTML(){
  const pend=S.preq.filter(t=>t.status==='wait').length+S.tx.filter(t=>t.status==='wait').length+S.deps.filter(d=>d.status==='wait').length+dueDeps().length+cands().length;
@@ -592,7 +600,7 @@ function queue(){
  S.tx.filter(t=>t.status==='wait').forEach(t=>r.push(`<tr><td>${n(t.sid)}</td><td>통장기록: ${esc(t.memo)} (${t.date.slice(5)})${EXV[catKey(t)]&&t.type==='out'&&exCheck(t.sid,catKey(t),t.date,t.id)?` <span class="out">⚠️ ${esc(exCheck(t.sid,catKey(t),t.date,t.id))}</span>`:''}</td><td class="${t.type==='in'?'in':'out'}">${t.type==='in'?'+':'-'}${W(t.amt)}</td><td><button class="g" onclick="dec('tx','${t.id}',1)">승인</button> <button class="r" onclick="rej('tx','${t.id}')">반려</button></td></tr>`));
  S.deps.filter(d=>d.status==='wait').forEach(d=>r.push(`<tr><td>${n(d.sid)}</td><td>정기예금 가입 신청</td><td>${W(d.amt)}</td><td><button class="g" onclick="dec('dep','${d.id}',1)">승인</button> <button class="r" onclick="rej('dep','${d.id}')">반려</button></td></tr>`));
  S.preq.filter(q=>q.status==='wait').sort((a,b)=>(b.bid||0)-(a.bid||0)).forEach(q=>{const p=S.props.find(x=>x.id===q.prop),cn=S.preq.filter(o=>o.prop===q.prop&&o.status==='wait').length;r.push(`<tr><td>${n(q.sid)}</td><td>부동산 ${esc(p?.name||'')}: ${sn(p?.owner)} → ${n(q.sid)} <span class="mut">공시가 ${W(p?priceOf(p):q.price)} · 희망가 <b>${W(q.bid||q.price)}</b>${cn>1?' · 🔥 경쟁 신청 '+cn+'명':''}${S.props.filter(o=>o.owner===q.sid).length>=1?' · 재산세 20% '+W(Math.round((q.bid||q.price)*0.2)):''}</span></td><td>${W(q.bid||q.price)}</td><td><input type="date" value="${qd(q.id)}" onchange="qdSet('${q.id}',this.value)" title="거래 날짜 (통장 입출금 날짜로 찍혀요)"> <button class="g" onclick="dec('prq','${q.id}',1)">승인</button> <button class="r" onclick="rej('prq','${q.id}')">반려</button></td></tr>`)});
- dueDeps().forEach(d=>{const rt=d.rate||10,it=Math.round(d.amt*rt/100);r.push(`<tr><td>${n(d.sid)}</td><td>🟧 정기예금 만기 도래 <span class="mut">(${rt}%·${d.weeks||4}주, ${mdD(d.start)}~${mdD(depEnd(d))}) 원금 ${W(d.amt)} + 이자 ${W(it)}</span></td><td class="in">+${W(d.amt+it)}</td><td><button class="g" onclick="matureNow('${d.id}')">만기 지급 승인</button></td></tr>`)});
+ dueDeps().forEach(d=>{const rt=d.rate||10,it=Math.round(d.amt*rt/100);r.push(`<tr><td>${n(d.sid)}</td><td>🟧 정기예금 만기 도래 <span class="mut">(${rt}%·${d.weeks||4}주, ${mdD(d.start)}~${mdD(depEnd(d))}) 원금 ${W(d.amt)} + 이자 ${W(it)} · <b>거래일 ${mdD(matDate(d))}</b></span></td><td class="in">+${W(d.amt+it)}</td><td><button class="g" onclick="matureNow('${d.id}')">만기 지급 승인</button></td></tr>`)});
  cands().forEach(({b,l})=>r.push(`<tr><td>${nm(b.sid)}</td><td>${l.tk} 거래 <span class="mut"><span class="buy">사는 사람 ${nm(b.sid)} (${W(b.price)})</span> ↔ <span class="sell">파는 사람 ${nm(l.sid)} (${W(l.price)})</span></span></td><td>${W(l.price)}</td><td><button class="g" onclick="deal('${b.id}','${l.id}')">거래 승인</button></td></tr>`));
  return `<div class="card"><div class="tw"><table><tr><th>학생</th><th>내용</th><th>금액</th><th></th></tr>${r.join('')||'<tr><td colspan="4" class="mut">대기 중인 요청이 없어요 🎉</td></tr>'}</table></div>${r.length?'<div class="row"><button onclick="allOk()">전부 승인</button></div>':''}</div>`}
 function apply(s,kind,id,yes,reason,date){
@@ -613,7 +621,7 @@ const qd=id=>(view.pdq&&view.pdq[id])||today();
 function qdSet(id,v){view.pdq=view.pdq||{};view.pdq[id]=v}
 function dec(k,id,y){return mut(s=>apply(s,k,id,y,'',k==='prq'?qd(id):undefined))}
 async function rej(k,id){const rs=await ask('반려 이유를 적어 주세요 (학생에게 보여요)',{text:''});if(rs===false)return;mut(s=>apply(s,k,id,0,String(rs).trim()))}
-async function allOk(){if(!await ask('대기 중인 요청과 주식 거래, 만기 예금 지급을 전부 승인할까요?'))return;mut(s=>{s.deps.filter(d=>d.status==='active'&&depEnd(d)<=today()).forEach(d=>matureApply(s,d.id));s.tx.filter(t=>t.status==='wait').forEach(t=>apply(s,'tx',t.id,1));s.deps.filter(d=>d.status==='wait').forEach(d=>apply(s,'dep',d.id,1));s.preq.filter(o=>o.status==='wait').sort((a,b)=>(b.bid||0)-(a.bid||0)).forEach(o=>apply(s,'prq',o.id,1,'',qd(o.id)));cands().forEach(({b,l})=>dealApply(s,b.id,l.id))})}
+async function allOk(){if(!await ask('대기 중인 요청과 주식 거래, 만기 예금 지급을 전부 승인할까요?'))return;mut(s=>{s.deps.filter(d=>d.status==='active'&&matDate(d)<=today()).forEach(d=>matureApply(s,d.id));s.tx.filter(t=>t.status==='wait').forEach(t=>apply(s,'tx',t.id,1));s.deps.filter(d=>d.status==='wait').forEach(d=>apply(s,'dep',d.id,1));s.preq.filter(o=>o.status==='wait').sort((a,b)=>(b.bid||0)-(a.bid||0)).forEach(o=>apply(s,'prq',o.id,1,'',qd(o.id)));cands().forEach(({b,l})=>dealApply(s,b.id,l.id))})}
 
 const ITEMS=[['2주급 지급','in'],['소득세','out'],['자릿세','out'],['수도요금','out'],['전기요금','out'],['건강보험료','out'],['급식비','out'],['기타(직접입력)','out']];
 const CART=['자릿세','수도요금','전기요금','건강보험료','급식비'];
