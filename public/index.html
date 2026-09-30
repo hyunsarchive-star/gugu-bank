@@ -25,7 +25,7 @@ td.n{text-align:right}.pend td{opacity:.55}.bal{font-size:26px;color:var(--ok)}.
 tr.meRow td{background:#fff3c4;color:#222}
 .tpu{background:#e3d4ff}.tye{background:#fff0a6}
 .tag{color:#222}
-.c-dev{background:#e2f08d}.c-comm{background:#9fe8ee}.c-wel{background:#ffc4e0}.c-right{background:#f0c2ff}.c-snack{background:#ffe1a8}.c-fine{background:#ff9b9b}.c-taxuse{background:#c8b8a0}
+.c-dev{background:#e2f08d}.c-comm{background:#9fe8ee}.c-wel{background:#ffc4e0}.c-right{background:#f0c2ff}.c-snack{background:#ffe1a8}.c-fine{background:#ff9b9b}.c-taxuse{background:#c8b8a0}.c-auc{background:#ffd0a0}
 .tgr{background:#b8ecc0}.tye{background:#fff06a}.tpu{background:#b7a4f5}.tbl{background:#a9cdff}.t1{background:#ffc98f}.tre{background:#f0b4a0}
 textarea{font:inherit}
 .c-merit{background:#8fe3c8}
@@ -34,7 +34,7 @@ td,th{white-space:nowrap}table{font-size:13px}.tag,button{white-space:nowrap}
 </style></head><body><div class="wrap" id="app">불러오는 중…</div>
 <script>
 const $=s=>document.querySelector(s),W=n=>Number(n||0).toLocaleString('ko-KR')+' 구미';
-const today=()=>new Date().toISOString().slice(0,10),uid=()=>Math.random().toString(36).slice(2,9);
+const today=()=>new Date(Date.now()+9*36e5).toISOString().slice(0,10),uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function toast(m){const d=document.createElement('div');d.textContent=m;d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#333;color:#fff;padding:10px 16px;border-radius:10px;z-index:100;max-width:90%;font-size:14px;text-align:center';document.body.appendChild(d);setTimeout(()=>d.remove(),3200)}
 function ask(m,opt){return new Promise(res=>{const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:99;padding:16px';const inp=opt&&('input' in opt||'text' in opt),num=opt&&'input' in opt;
@@ -58,7 +58,7 @@ function seedCatalog(){const A=[
 ['out','벌금','기한 내 과제 미제출 (주제 글쓰기, 독서록, 한자, 비문학 등)',30,''],['out','벌금','수업 준비물 미흡 및 대여',10,''],['out','벌금','과속 혹은 고성방가',15,''],['out','벌금','분쟁 조정비용 (선생님의 시간은 소중합니다)',30,''],
 ['out','세금 사용처','시간표 바꾸기 / 피구·야구 등 놀이 / 1시간 보드게임',1200,''],['out','세금 사용처','과자파티, 영화데이 등 학급 이벤트',2500,'']];
  return A.map((a,i)=>({id:'c'+i,kind:a[0],cat:a[1],text:a[2],unit:a[3],note:a[4]}))}
-const blank=()=>({students:[],tx:[],deps:[],stocks:[{id:'s1',name:'고구마푸드',code:'FOOD',price:300,limit:5},{id:'s2',name:'고구마 스테이셔너리',code:'STAT',price:200,limit:8},{id:'s3',name:'고구마 스포츠',code:'SPRT',price:100,limit:12}],orders:[],props:[],preq:[],mkt:{stock:false,prop:false,job:false},sh:[],ord:[],trades:[],phase:0,news:[],job:{stage:'apply'},jobs:defJobs(),apps:[],assign:[],month:'2026-09',ptx:[],snap:{},splits:[],sdisc:{},gigs:[],catalog:{items:seedCatalog(),live:null},officers:[{name:'서현준',role:'회장'},{name:'윤하율',role:'부회장'},{name:'양유진',role:'부회장'}]});
+const blank=()=>({students:[],tx:[],deps:[],stocks:[{id:'s1',name:'고구마푸드',code:'FOOD',price:300,limit:5},{id:'s2',name:'고구마 스테이셔너리',code:'STAT',price:200,limit:8},{id:'s3',name:'고구마 스포츠',code:'SPRT',price:100,limit:12}],orders:[],props:[],preq:[],mkt:{stock:false,prop:false,job:false},sh:[],ord:[],trades:[],phase:0,news:[],job:{stage:'apply'},jobs:defJobs(),apps:[],assign:[],month:'2026-09',ptx:[],snap:{},splits:[],sdisc:{},gigs:[],auctions:[],catalog:{items:seedCatalog(),live:null},officers:[{name:'서현준',role:'회장'},{name:'윤하율',role:'부회장'},{name:'양유진',role:'부회장'}]});
 let S=blank(),me=null,view={tab:'ledger',sid:null,teacher:false};
 let TOKEN=null,REV=0,ROSTER=[];
 function priceIn(p,m){const P=p.prices||{};if(P[m]!=null)return P[m];let v=null;Object.keys(P).sort().forEach(k=>{if(k<=m)v=P[k]});return v!=null?v:(Object.keys(P).length?P[Object.keys(P).sort()[0]]:0)}
@@ -68,12 +68,15 @@ function cleanJobs(x){if(!x.catalog||!x.catalog.items)x.catalog={items:seedCatal
 function norm(x){x=Object.assign(blank(),x);cleanJobs(x);if(x.phase>2)x.phase=x.phase%2?1:2;
  x.props.forEach(p=>{if(!p.prices){p.prices={[x.month]:p.price||0};delete p.price}if(p.sale==null)p.sale=false;
   if(!p.owner&&p.hold){const t=x.students.find(y=>y.name===p.hold);if(t){p.owner=t.id;x.ptx.push({id:'i'+p.name,seat:p.name,month:'2026-09',date:today(),buyer:t.id,seller:'',price:priceIn(p,'2026-09'),cost:null,kind:'init'});delete p.hold}}});x.stocks.forEach(t=>{if(!t.hist)t.hist=[{p:t.price,n:'시작'}];if(!t.code)t.code={s1:'FOOD',s2:'STAT',s3:'SPRT'}[t.id]||'STK'});
- x.stocks.forEach(t=>{for(let i=1;i<=(t.limit||0);i++){const tk=t.code+'-'+String(i).padStart(3,'0');if(!x.sh.some(y=>y.tk===tk))x.sh.push({tk,stock:t.id,owner:''})}});return x}
+ x.stocks.forEach(t=>{const seen=new Set();x.sh=x.sh.filter(y=>{if(y.stock!==t.id)return true;if(seen.has(y.tk)&&!y.owner)return false;seen.add(y.tk);return true});
+  let c=x.sh.filter(y=>y.stock===t.id).length;const L=t.limit||0;
+  if(L>0&&c>L){const nn=k=>+String(k).split('-').pop()||0,pl=x.sh.filter(y=>y.stock===t.id&&!y.owner).sort((a,b)=>nn(b.tk)-nn(a.tk)).slice(0,c-L),rm=new Set(pl.map(y=>y.tk));x.sh=x.sh.filter(y=>!(y.stock===t.id&&!y.owner&&rm.has(y.tk)));x.ord.forEach(o=>{if(o.status==='open'&&o.tk&&rm.has(o.tk))o.status='cancel'});c=x.sh.filter(y=>y.stock===t.id).length;if(c>L)t.limit=c}
+  for(let i=1;c<L;i++){const tk=t.code+'-'+String(i).padStart(3,'0');if(!x.sh.some(y=>y.tk===tk)){x.sh.push({tk,stock:t.id,owner:''});c++}}});return x}
 // ───── 서버 연결 (Cloudflare Pages Functions + KV) ─────
 // 데이터는 전부 서버(KV)에 있고, 브라우저에는 로그인 토큰만 (탭을 닫으면 사라지는 sessionStorage) 둡니다.
 async function api(path,opt){opt=opt||{};let r;try{r=await fetch('/api/'+path,{method:opt.method||'GET',headers:Object.assign({'Content-Type':'application/json'},TOKEN?{Authorization:'Bearer '+TOKEN}:{}),body:opt.body?JSON.stringify(opt.body):undefined,cache:'no-store'})}catch(e){return{status:0,j:null}}let j=null;try{j=await r.json()}catch(e){}return{status:r.status,j}}
 function saveAuth(){try{sessionStorage.setItem('gugu-auth',JSON.stringify(TOKEN?{t:TOKEN,me,teacher:view.teacher}:null))}catch(e){}}
-function dropAuth(msg){TOKEN=null;me=null;view.teacher=false;S=blank();REV=0;saveAuth();loadRoster().then(render);if(msg)toast(msg)}
+function dropAuth(msg){view.rst=null;TOKEN=null;me=null;view.teacher=false;S=blank();REV=0;saveAuth();loadRoster().then(render);if(msg)toast(msg)}
 async function loadRoster(){const r=await api('roster');if(r.status===200)ROSTER=r.j.students||[];return r}
 // 서버에서 최신 데이터 읽기. 없으면 null, 연결 실패면 undefined
 async function fetchState(){if(!TOKEN)return undefined;const r=await api('state');if(r.status===401){dropAuth('로그인이 만료됐어요. 다시 들어와 주세요.');return undefined}if(r.status!==200)return undefined;REV=r.j.rev;return r.j.state||null}
@@ -118,8 +121,8 @@ async function tlogin(){const r=await api('admin-login',{method:'POST',body:{pas
 function logout(){dropAuth()}
 
 const money=t=>{const it=t.inTxt||t.info,i=it?esc(it):(t.type==='in'?'+'+W(t.amt):''),o=t.outTxt?esc(t.outTxt):(t.type==='out'?'-'+W(t.amt):'');return `<td class="n in">${i}</td><td class="n out">${o}</td>`};
-const CATS={pay:['tgr','🟩 2주급'],dev:['c-dev','📗 자기 계발'],merit:['c-merit','⭐ 우수 활동'],comm:['c-comm','🤝 공동체 생활'],wel:['c-wel','🎁 복지비'],right:['c-right','🎟 권리 구매'],snack:['c-snack','🍬 간식 구매'],fine:['c-fine','🚨 벌금'],taxuse:['c-taxuse','🏛 세금 사용처'],gig:['tye','🟨 아르바이트'],stock:['tpu','🟪 주식'],estate:['tbl','🟦 부동산'],dep:['t1','🟧 예금'],tax:['tre','🟥 세금·공과금'],etc:['tgy','⬜ 기타']};
-function catKey(t){if(t.cat&&CATS[t.cat])return t.cat;const m=t.memo||'';if(/^아르바이트/.test(m))return 'gig';if(/^2주급|급여/.test(m))return 'pay';if(/부동산/.test(m))return 'estate';if(/정기예금/.test(m))return 'dep';if(/[A-Z]{3,5}-\d{3}|주식/.test(m))return 'stock';if(/소득세|자릿세|수도|전기|건강보험|급식비|\(자\)|\(소\)|세금/.test(m))return 'tax';return 'etc'}
+const CATS={pay:['tgr','🟩 2주급'],dev:['c-dev','📗 자기 계발'],merit:['c-merit','⭐ 우수 활동'],comm:['c-comm','🤝 공동체 생활'],wel:['c-wel','🎁 복지비'],right:['c-right','🎟 권리 구매'],snack:['c-snack','🍬 간식 구매'],fine:['c-fine','🚨 벌금'],taxuse:['c-taxuse','🏛 세금 사용처'],gig:['tye','🟨 아르바이트'],auction:['c-auc','🔨 경매'],stock:['tpu','🟪 주식'],estate:['tbl','🟦 부동산'],dep:['t1','🟧 예금'],tax:['tre','🟥 세금·공과금'],etc:['tgy','⬜ 기타']};
+function catKey(t){if(t.cat&&CATS[t.cat])return t.cat;const m=t.memo||'';if(/^아르바이트/.test(m))return 'gig';if(/^경매/.test(m))return 'auction';if(/^2주급|급여/.test(m))return 'pay';if(/부동산/.test(m))return 'estate';if(/정기예금/.test(m))return 'dep';if(/[A-Z]{3,5}-\d{3}|주식/.test(m))return 'stock';if(/소득세|자릿세|수도|전기|건강보험|급식비|\(자\)|\(소\)|세금/.test(m))return 'tax';return 'etc'}
 const catTag=t=>{const [c,l]=CATS[catKey(t)];return `<span class="tag ${c}">${l}</span>`};
 function form(title,fields){return new Promise(res=>{const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:99;padding:16px';
  o.innerHTML=`<div class="card" style="max-width:420px;width:100%;margin:0;max-height:90vh;overflow:auto"><b id="ft"></b>${fields.map((f,i)=>`<div class="row"><label style="width:78px">${esc(f.label)}</label>${f.type==='select'?`<select id="fm${i}" style="flex:1">${f.opts.map(([v,l])=>`<option value="${esc(v)}" ${String(f.val)===String(v)?'selected':''}>${esc(l)}</option>`).join('')}</select>`:`<input id="fm${i}" type="${f.type||'text'}" value="${esc(f.val??'')}" style="flex:1;min-width:0">`}</div>`).join('')}<div class="row" style="justify-content:flex-end"><button class="s" id="fno">취소</button><button id="fok">확인</button></div></div>`;
@@ -149,13 +152,15 @@ function deposits(sid,canAdd){
  const mine=S.deps.filter(d=>d.sid===sid);
  const rows=mine.map(d=>{const rt=d.rate||10,wk=d.weeks||4,end=new Date(new Date(d.start).getTime()+wk*7*864e5).toISOString().slice(0,10),it=Math.round(d.amt*rt/100);
   const stt=d.status==='wait'?'<span class="tag tgy">⏳ 승인대기</span>':d.status==='active'?`<span class="tag tbl">🔵 진행중 (만기 ${end.slice(5)})</span>`:d.status==='done'?'<span class="tag tgr">🟢 만기 완료</span>':'<span class="tag tre">🔴 반려</span> <span class="mut">'+esc(d.reason||'')+'</span>';
-  return `<tr><td>${d.start.slice(5)}</td><td><span class="tag ${rt===5?'t2':'t1'}">${rt===5?'🟦':'🟧'} ${rt}% · ${wk}주</span></td><td class="n">${W(d.amt)}</td><td class="n">${W(it)}</td><td class="n">${W(d.amt+it)}</td><td>${stt}</td><td>${view.teacher&&d.status==='active'?`<button class="g" onclick="matureDep('${d.id}')">만기 지급</button>`:''}</td></tr>`}).join('');
+  return `<tr><td>${d.start.slice(5)}</td><td><span class="tag ${rt===5?'t2':'t1'}">${rt===5?'🟦':'🟧'} ${rt}% · ${wk}주</span></td><td class="n">${W(d.amt)}</td><td class="n">${W(it)}</td><td class="n">${W(d.amt+it)}</td><td>${stt}</td><td>${view.teacher&&d.status==='active'?`<button class="g" onclick="matureDep('${d.id}')">만기 지급</button>`:''}${view.teacher?` <button class="r" onclick="delDep('${d.id}')">삭제</button>`:''}</td></tr>`}).join('');
  return `<div class="card"><b>정기예금 통장</b><div class="tw"><table><tr><th>가입일</th><th>상품</th><th>원금</th><th>이자</th><th>만기금액</th><th>상태</th><th></th></tr>${rows||'<tr><td colspan="7" class="mut">가입한 예금이 없어요</td></tr>'}</table></div></div>
- ${canAdd?`<div class="card"><h2>예금 상품</h2><div class="row"><span class="tag t1 chip ${(view.dp||'10,4')==='10,4'?'on':''}" onclick="pickDp('10,4')">🟧 상품 1 · 이율 10% / 4주 만기</span><span class="tag t2 chip ${view.dp==='5,2'?'on':''}" onclick="pickDp('5,2')">🟦 상품 2 · 이율 5% / 2주 만기</span><input id="da" type="number" min="0" placeholder="예금할 금액"><button onclick="reqDep()">가입 신청</button></div><div class="mut">승인되면 통장에서 원금이 빠져나가고, 만기에 원금+이자가 돌아와요. 현재 잔액 ${W(bal(sid))}</div></div>`:''}`}
+ ${view.teacher&&!canAdd?depForm(sid):''}${canAdd?`<div class="card"><h2>예금 상품</h2><div class="row"><span class="tag t1 chip ${(view.dp||'10,4')==='10,4'?'on':''}" onclick="pickDp('10,4')">🟧 상품 1 · 이율 10% / 4주 만기</span><span class="tag t2 chip ${view.dp==='5,2'?'on':''}" onclick="pickDp('5,2')">🟦 상품 2 · 이율 5% / 2주 만기</span><input id="da" type="number" min="0" placeholder="예금할 금액"><button onclick="reqDep()">가입 신청</button></div><div class="mut">승인되면 통장에서 원금이 빠져나가고, 만기에 원금+이자가 돌아와요. 현재 잔액 ${W(bal(sid))}</div></div>`:''}`}
 function pickDp(v){view.dp=v;render()}
 function reqDep(){const a=Math.round(+$('#da').value),[rt,wk]=(view.dp||'10,4').split(',').map(Number);if(!(a>0))return toast('금액을 적어요');if(a>bal(me))return toast('잔액이 부족해요');mut(s=>s.deps.push({id:uid(),sid:me,amt:a,rate:rt,weeks:wk,start:today(),status:'wait'}))}
 const mdD=x=>(+x.slice(5,7))+'/'+(+x.slice(8,10)),depEnd=d=>new Date(new Date(d.start).getTime()+(d.weeks||4)*7*864e5).toISOString().slice(0,10);
-async function matureDep(id){if(!await ask('만기 금액을 통장으로 지급할까요?'))return;mut(s=>{const d=s.deps.find(x=>x.id===id),rt=d.rate||10,it=Math.round(d.amt*rt/100);d.status='done';addTx(d.sid,`정기예금 만기 (원금 ${d.amt}+이자 ${it}, ${rt}%·${d.weeks||4}주) 가입기간 ${mdD(d.start)}~${mdD(depEnd(d))}`,'in',d.amt+it,'ok','teacher')})}
+function matureApply(s,id){const d=s.deps.find(x=>x.id===id);if(!d||d.status!=='active')return;const rt=d.rate||10,it=Math.round(d.amt*rt/100);d.status='done';addTx(d.sid,`정기예금 만기 (원금 ${d.amt}+이자 ${it}, ${rt}%·${d.weeks||4}주) 가입기간 ${mdD(d.start)}~${mdD(depEnd(d))}`,'in',d.amt+it,'ok','teacher')}
+const dueDeps=()=>S.deps.filter(d=>d.status==='active'&&depEnd(d)<=today());
+async function matureDep(id){if(!await ask('만기 금액을 통장으로 지급할까요?'))return;mut(s=>matureApply(s,id))}
 const stk=id=>S.stocks.find(x=>x.id===id),nm=id=>esc(st(id)?.name||'발행사');
 function cands(){const out=[],used=new Set();
  S.ord.filter(o=>o.side==='buy'&&o.status==='open').sort((a,b)=>b.price-a.price).forEach(b=>{
@@ -186,7 +191,7 @@ function stocks(sid,canAdd){
  const tr=S.trades.slice(view.teacher?-25:-6).reverse().map(t=>`<tr><td>${t.date.slice(5)}</td><td>${t.tk}</td><td><span class="buy">${nm(t.buyer)}</span> ← <span class="sell">${nm(t.seller)}</span></td><td class="n">${W(t.price)}</td>${view.teacher?`<td><button class="r" onclick="delTrade('${t.id}')">삭제</button></td>`:''}</tr>`).join('');
  const real=S.trades.filter(t=>t.seller===sid&&t.cost>0).reduce((a,t)=>a+t.price-t.cost,0);
  const mt=S.trades.filter(t=>t.buyer===sid||t.seller===sid).slice(-12).reverse().map(t=>{const sell=t.seller===sid,g=t.price-t.cost;return `<tr><td>${t.date.slice(5)}</td><td>${t.tk}</td><td class="${sell?'sell':'buy'}">${sell?'매도':'매수'}</td><td class="n">${W(t.price)}</td><td class="n">${sell&&t.cost>0?W(Math.round(t.cost)):'-'}</td><td class="n ${g>=0?'in':'out'}">${sell&&t.cost>0?(g>=0?'+':'')+W(Math.round(g)):'-'}</td></tr>`}).join('');
- const spl=S.splits.slice(-3).reverse().map(t=>`<div style="margin:6px 0"><b>${esc(stk(t.stock)?.name||'')}</b> ${t.fr}주 → ${t.to}주 <span class="mut">(${t.date.slice(5)})</span> · 내 주식 <b>${t.before[sid]||0}주 → ${t.after[sid]||0}주</b></div>`).join('');
+ const spl=S.splits.slice(-3).reverse().map(t=>`<div style="margin:6px 0">${view.teacher?`<button class="r" onclick="delSplit('${t.id}')">삭제</button> `:''}<b>${esc(stk(t.stock)?.name||'')}</b> ${t.fr}주 → ${t.to}주 <span class="mut">(${t.date.slice(5)})</span> · 내 주식 <b>${t.before[sid]||0}주 → ${t.after[sid]||0}주</b>${view.teacher?` <button class="r" onclick="delSplit('${t.id}')">삭제</button>`:''}</div>`).join('');
  const nw=S.news.slice(-6).reverse().map(n=>`<div style="margin:6px 0">📰 <b>${n.week?n.week+'주차 · ':''}${n.stock==='all'?'전체':esc(stk(n.stock)?.name||'')}</b> — ${esc(n.text)}</div>`).join('');
  return mktBar('stock')+`<div class="card"><b>📰 주식 뉴스</b>${newsHTML(view.teacher)}</div>
  ${spl?`<div class="card"><b>📢 액면분할 안내</b>${spl}</div>`:''}<div class="card"><b>주식 시세</b> <span class="mut">평가손익 합계 <span class="${totpl>=0?'in':'out'}">${totpl>=0?'+':''}${W(totpl)}</span> · 실현손익 <span class="${real>=0?'in':'out'}">${real>=0?'+':''}${W(Math.round(real))}</span></span><div class="tw"><table><tr><th>종목</th><th>현재가</th><th>보유</th><th>평균 매입가</th><th>평가손익</th><th>발행사 보유</th></tr>${rows}</table></div></div>
@@ -210,14 +215,15 @@ function dealApply(s,bid,lid){const b=s.ord.find(x=>x.id===bid),l=s.ord.find(x=>
  const oc=sh.cost;sh.owner=b.sid;sh.cost=l.price;b.status='done';l.status='done';s.trades.push({id:uid(),date:today(),tk:l.tk,buyer:b.sid,seller:l.sid,price:l.price,cost:oc});
  const x=s.stocks.find(y=>y.id===sh.stock);x.price=l.price;x.hist.push({p:l.price,n:'거래',d:today(),b:b.sid,s:l.sid});if(x.hist.length>80)x.hist.shift()}
 async function deal(bid,lid){if(!await ask('이 거래를 승인할까요? 양쪽 통장에 바로 반영돼요.'))return;mut(s=>dealApply(s,bid,lid))}
+async function delSplit(id){if(!await ask('이 액면분할 안내를 지울까요? (주식 수·가격은 그대로예요)'))return;mut(s=>{s.splits=s.splits.filter(x=>x.id!==id)})}
 async function splitStock(id){const fr=Math.round(+$('#sf'+id).value),to=Math.round(+$('#st'+id).value);if(!(fr>=1&&to>fr))return toast('1주를 2주로 처럼, 늘어나는 숫자를 적어요');
  const x0=stk(id);if(!await ask(`${x0.name}: ${fr}주를 ${to}주로 늘릴까요? 가격은 ${fr}/${to}배가 되고, 열려 있는 주문은 취소돼요. 주식 입고 내용이 학생 통장에 기록돼요.`))return;
  mut(s=>{const x=s.stocks.find(y=>y.id===id);s.ord.forEach(o=>{if(o.stock===id&&o.status==='open')o.status='cancel'});
-  const all=s.sh.filter(y=>y.stock===id),owners=[...new Set(all.map(y=>y.owner))],before={},after={};let num=all.length;
+  const all=s.sh.filter(y=>y.stock===id),owners=[...new Set(all.map(y=>y.owner))],before={},after={};let num=Math.max(all.length,...all.map(y=>+String(y.tk).split('-').pop()||0));
   owners.forEach(ow=>{const g=all.filter(y=>y.stock===id&&y.owner===ow),n2=Math.floor(g.length*to/fr);before[ow||'pool']=g.length;after[ow||'pool']=n2;g.forEach(o=>{if(o.cost)o.cost=o.cost*fr/to});const c=g[0].cost,nt=[];
    for(let k=g.length;k<n2;k++){num++;const tk=x.code+'-'+String(num).padStart(3,'0');s.sh.push({tk,stock:id,owner:ow,cost:c});nt.push(tk)}
    if(ow&&nt.length){addTx(ow,`${x.code} 액면분할 ${fr}→${to}: ${nt[0]}${nt.length>1?' ~ '+nt[nt.length-1]:''} 입고`,'in',0,'ok','teacher',today(),'stock');s.tx[s.tx.length-1].info=`+${nt.length}주 입고`}});
-  x.limit=num;x.price=Math.max(1,Math.round(x.price*fr/to));x.hist.push({p:x.price,n:`액면분할 ${fr}→${to}`,k:'액면분할',d:today()});
+  x.limit=s.sh.filter(y=>y.stock===id).length;x.price=Math.max(1,Math.round(x.price*fr/to));x.hist.push({p:x.price,n:`액면분할 ${fr}→${to}`,k:'액면분할',d:today()});
   s.splits.push({id:uid(),stock:id,fr,to,date:today(),before,after});
   s.news.push({id:uid(),stock:id,text:`${x.name} 액면분할! ${fr}주가 ${to}주가 됐어요. 가격은 ${fr}/${to}배, 내 주식 수는 ${to/fr}배로 늘어요.`,date:today()})})}
 const SLOTS=[['s10a','10월 전반기'],['s10b','10월 후반기'],['s11a','11월 전반기'],['s11b','11월 후반기'],['s12a','12월 전반기'],['s12b','12월 후반기']];
@@ -427,9 +433,37 @@ const RS={
   {k:'own',n:'자리 주인 (모두 분양 전으로)',cnt:s=>s.props.filter(x=>x.owner).length,all:s=>{s.props.forEach(x=>{x.owner='';x.sale=false})}},
   {k:'price',n:'월별 공시가',cnt:s=>s.props.reduce((a,x)=>a+Object.keys(x.prices||{}).length,0),ms:s=>s.props.flatMap(x=>Object.keys(x.prices||{})),all:s=>{s.props.forEach(x=>{x.prices={}})},m:(s,m)=>{s.props.forEach(x=>{delete x.prices[m]})}}]},
  job:{n:'직업',it:[{k:'jobapp',n:'지원·배정 기록',cnt:s=>s.apps.length+s.assign.length,all:s=>{s.apps=[];s.assign=[];s.job={stage:'apply'}}}]},
+ auction:{n:'경매',it:[{k:'auc',n:'경매 (진행중·완료 모두)',cnt:s=>s.auctions.length,ms:s=>s.auctions.map(x=>mo(x.created)),all:s=>{s.auctions=[]},m:(s,m)=>{s.auctions=s.auctions.filter(x=>mo(x.created)!==m)}}]},
  gig:{n:'아르바이트',it:[{k:'gigs',n:'아르바이트 공고 (종료 포함)',cnt:s=>s.gigs.length,ms:s=>s.gigs.map(x=>mo(x.date)),all:s=>{s.gigs=[]},m:(s,m)=>{s.gigs=s.gigs.filter(x=>mo(x.date)!==m)}}]}};
+function dlFile(name,mime,text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:mime}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+function backupJSON_local(){const c=JSON.parse(JSON.stringify(S));delete c.tpin;c.students.forEach(s=>{delete s.pin});dlFile(`고구마은행_전체백업_${today()}.json`,'application/json',JSON.stringify({app:'gugu-bank',saved:new Date().toISOString(),data:c},null,1));toast('백업 파일을 만들었어요')}
+async function backupJSON(){if(!view.teacher||!TOKEN)return;let r;try{r=await fetch('/api/backup',{headers:{Authorization:'Bearer '+TOKEN},cache:'no-store'})}catch(e){return toast('서버에 연결할 수 없어요')}
+ if(!r.ok){let j={};try{j=await r.json()}catch(e){}return toast('백업 실패: '+(j.error||r.status))}
+ const cd=r.headers.get('Content-Disposition')||'',m=/filename="([^"]+)"/.exec(cd),d=new Date(Date.now()+9*36e5).toISOString(),name=m?m[1]:`gugu-bank-backup-${d.slice(0,10)}-${d.slice(11,13)}${d.slice(14,16)}.json`;
+ dlFile(name,'application/json',await r.text());toast('백업 파일을 만들었어요')}
+// ───── 백업 복원 (교사 전용) ─────
+// 파일 선택 칸은 화면이 자동 갱신돼도 사라지지 않게 #app 밖에 한 번만 만들어 둬요 (교사가 「백업 복원」을 누를 때만 쓰여요)
+function pickRestore(){if(!view.teacher||!TOKEN)return;let f=document.getElementById('rf');if(!f){f=document.createElement('input');f.type='file';f.id='rf';f.accept='.json,application/json';f.style.display='none';f.onchange=()=>restoreFile(f);document.body.appendChild(f)}f.value='';f.click()}
+function notice(m){return new Promise(res=>{const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:99;padding:16px';o.innerHTML='<div class="card" style="max-width:380px;width:100%;margin:0"><div style="margin-bottom:12px;white-space:pre-line" id="nm"></div><div class="row" style="justify-content:flex-end"><button id="nok">확인</button></div></div>';document.body.appendChild(o);o.querySelector('#nm').textContent=m;o.querySelector('#nok').onclick=()=>{o.remove();res(true)}})}
+function whenKST(b){let d=b.backupAtKST?b.backupAtKST.slice(0,16):(b.backupAt?new Date(Date.parse(b.backupAt)+9*36e5).toISOString().slice(0,16):'');if(!d)return '알 수 없음';return `${d.slice(0,4)}년 ${+d.slice(5,7)}월 ${+d.slice(8,10)}일 ${d.slice(11,13)}시 ${d.slice(14,16)}분`}
+function rstMsg(ok,m){view.rst={ok,m};render()}
+async function restoreFile(inp){if(!view.teacher||!TOKEN)return;const f=inp.files&&inp.files[0];if(!f)return;
+ let b;try{b=JSON.parse(await f.text())}catch(e){return rstMsg(false,`❌ 복원 실패: 「${f.name}」은(는) 올바른 백업 파일이 아니에요 (JSON을 읽을 수 없어요). 현재 데이터는 그대로예요.`)}
+ if(!b||b.app!=='gugu-bank'||!b.state)return rstMsg(false,`❌ 복원 실패: 「${f.name}」은(는) 이 앱의 「💾 데이터 백업」으로 만든 파일이 아니에요. 현재 데이터는 그대로예요.`);
+ view.rst={ok:null,m:`선택한 파일: ${f.name} · 이 백업은 ${esc(whenKST(b))} 시점의 데이터예요 · 학생 ${(b.state.students||[]).length}명 · 통장 기록 ${(b.state.tx||[]).length}건`};render();
+ if(!await ask('현재 데이터를 이 백업 파일로 덮어씁니다. 계속하시겠습니까?')){view.rst={ok:null,m:'복원을 취소했어요. 현재 데이터는 그대로예요.'};return render()}
+ // 안전장치: 서버가 현재 데이터를 따로 보관한 뒤에만 교체해요. 내 컴퓨터에도 현재 데이터 백업 파일을 한 번 더 저장해 둬요.
+ try{const cr=await fetch('/api/backup',{headers:{Authorization:'Bearer '+TOKEN},cache:'no-store'});if(cr.ok){const cd=cr.headers.get('Content-Disposition')||'',m=/filename="([^"]+)"/.exec(cd);dlFile((m?m[1]:'gugu-bank-backup.json').replace('backup','before-restore'),'application/json',await cr.text())}}catch(e){}
+ const r=await api('restore',{method:'POST',body:{backup:b}});
+ if(r.status===200&&r.j&&r.j.ok){const l=await fetchState();if(l)S=norm(l);rstMsg(true,`✅ 복원을 완료했습니다! ${esc(whenKST(b))} 시점의 데이터로 돌아갔어요. 학생 ${r.j.students}명 · 통장 기록 ${r.j.tx}건. 복원 전 데이터는 서버에 안전 백업(${esc(r.j.safetyKey||'없음')})으로 보관했어요.`);await notice(`복원을 완료했습니다.\n\n${whenKST(b)} 시점의 데이터로 돌아갔어요.\n학생 ${r.j.students}명 · 통장 기록 ${r.j.tx}건`)}
+ else{const e=(r.j&&r.j.error)||'서버에 연결할 수 없어요.';rstMsg(false,`❌ 복원 실패: ${esc(e)}${/그대로예요/.test(e)?'':' 현재 데이터는 그대로예요.'}`)}}
+function rstBox(){const v=view.rst;return v?`<div class="card" style="border-color:${v.ok===true?'var(--ok)':v.ok===false?'var(--bad)':'var(--ink)'}">${v.m}</div>`:''}
+function backupCSV(){const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"',stt={ok:'승인',wait:'승인대기',no:'반려'},rows=[['이름','날짜','내용','구분','입금','출금','상태','반려 사유']];
+ S.students.forEach(s=>S.tx.filter(t=>t.sid===s.id).slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0).forEach(t=>rows.push([s.name,t.date,t.memo,t.type==='in'?'입금':'출금',t.type==='in'?t.amt:'',t.type==='in'?'':t.amt,stt[t.status]||t.status,t.reason||''])));
+ dlFile(`고구마은행_통장내역_${today()}.csv`,'text/csv;charset=utf-8','\ufeff'+rows.map(r=>r.map(q).join(',')).join('\r\n'));toast('통장 내역 파일을 만들었어요')}
 function resetTab(){const ml=m=>m.slice(0,4)+'년 '+(+m.slice(5))+'월';
- return `<div class="card"><h2>🧹 탭 관리 (데이터 삭제)</h2><div class="mut">탭마다 내용을 월별로 지우거나 전부 지울 수 있어요. 학생 명단·비밀번호·주식 종목·직업 목록·자리 목록·수입처/소비처는 지워지지 않아요. 지운 뒤에는 되돌릴 수 없어요.</div></div>`+
+ return rstBox()+`<div class="card"><h2>💾 학생 자료 백업</h2><div class="mut">지우기 전에 꼭 백업해 두세요. 파일이 내 컴퓨터에 저장돼요.</div><div class="row"><button class="g" onclick="backupJSON()">💾 데이터 백업 (.json)</button><button class="s" onclick="pickRestore()">📂 백업 복원</button><button onclick="backupCSV()">📄 학생 통장 내역 (.csv · 엑셀용)</button></div><div class="mut">전체 백업에는 학생·통장·예금·주식·부동산·직업·아르바이트 등 모든 자료가 들어 있어요 (비밀번호는 원문 없이 암호화된 값으로만 들어가요). 복원은 백업 파일로 현재 데이터를 통째로 바꿔요. 복원 직전 현재 데이터는 자동으로 따로 보관돼요.. 통장 내역 파일은 학생별 입출금 기록을 엑셀로 열 수 있어요.</div></div>
+ <div class="card"><h2>🧹 탭 관리 (데이터 삭제)</h2><div class="mut">탭마다 내용을 월별로 지우거나 전부 지울 수 있어요. 학생 명단·비밀번호·주식 종목·직업 목록·자리 목록·수입처/소비처는 지워지지 않아요. 지운 뒤에는 되돌릴 수 없어요.</div></div>`+
  Object.values(RS).map(g=>`<div class="card"><b>${g.n}</b><div class="tw"><table><tr><th>항목</th><th>개수</th><th>월별 삭제</th><th>전체 삭제</th></tr>${g.it.map(i=>{const ms=i.ms?[...new Set(i.ms(S).filter(Boolean))].sort():[];return `<tr><td>${i.n}</td><td class="n">${i.cnt(S)}</td><td>${i.m?(ms.length?`<select id="rm_${i.k}">${ms.map(m=>`<option value="${m}">${ml(m)}</option>`).join('')}</select> <button class="r" onclick="resetItem('${i.k}','m')">월 삭제</button>`:'<span class="mut">-</span>'):'<span class="mut">월별 없음</span>'}</td><td><button class="r" onclick="resetItem('${i.k}','all')">전체 삭제</button></td></tr>`}).join('')}</table></div></div>`).join('')+
  `<div class="card"><b>⚠️ 모든 탭 한꺼번에</b><div class="mut">학생 명단과 설정만 남기고 모든 기록을 지워요.</div><button class="r" onclick="resetAll()">전부 지우기</button></div>`}
 const RSI=()=>Object.values(RS).flatMap(g=>g.it);
@@ -448,26 +482,89 @@ function gigOne(end){const T=view.teacher,nn=id=>esc(st(id)?.name||'?'),gs=S.gig
    <div class="row">${g.status==='open'?`<button onclick="finishGig('${g.id}')">구인 완료</button>`:(!g.paid?`<button class="s" onclick="reopenGig('${g.id}')">다시 모집</button>`:'')}${g.status==='done'&&!g.paid&&g.picked.length?`<button class="g" onclick="payGigs('${g.id}')">💸 급여 송금</button>`:''}<button class="s" onclick="gigForm('${g.id}')">수정</button><button class="r" onclick="delGig('${g.id}')">삭제</button></div></div>`).join('')||(end?'<div class="card mut">종료된 아르바이트가 아직 없어요.</div>':'<div class="card mut">공고가 없어요. 「공고 올리기」를 눌러 주세요.</div>'))}
  return `<div class="card"><b>${end?'✅ 종료된 아르바이트':'🟨 아르바이트 공고'}</b><div class="tw"><table><tr><th>날짜</th><th>하는 일</th><th>급여</th><th>모집</th><th>상태</th><th></th></tr>${gs.map(g=>{const ap=g.apps.includes(me),pk=g.picked.includes(me);
   return `<tr><td>${g.date.slice(5).replace('-','/')}</td><td style="text-align:left">${esc(g.title)}</td><td class="n">${W(g.pay)}</td><td>정원 ${g.slots}명 <span class="mut">지원 ${g.apps.length}명</span></td><td>${tag(g)}${g.status==='done'?`<div class="mut">${g.picked.map(nn).join(', ')}</div>`:''}</td><td>${g.status==='open'?`<button class="${ap?'s':''}" onclick="applyGig('${g.id}')">${ap?'지원 취소':'지원하기'}</button>`:pk?'<span class="tag tgr">🟢 확정!</span>':ap?'<span class="tag tgy">선발 안 됨</span>':''}</td></tr>`}).join('')||`<tr><td colspan="6" class="mut">${end?'종료된 아르바이트가 없어요':'지금은 공고가 없어요'}</td></tr>`}</table></div></div>`}
+
+// ───── 교사: 예금 등록 (기존 예금 내역·새 예금을 학생 통장에 바로 연결) ─────
+const DPP={'10,4':[10,4,'🟧 상품 1 · 이율 10% / 4주'],'5,2':[5,2,'🟦 상품 2 · 이율 5% / 2주']};
+function depForm(fixed){const who=fixed?`<div class="row"><b>${esc(st(fixed)?.name||'')}</b> 학생 통장에 예금 넣기</div>`:`<div class="row"><b>학생 선택</b> <button class="s" onclick="depAll(1)">전체 선택</button><button class="s" onclick="depAll(0)">선택 해제</button></div><div class="row">${S.students.map(s=>`<label style="white-space:nowrap"><input type="checkbox" class="dsel" value="${s.id}"> ${esc(s.name)}</label>`).join(' ')||'<span class="mut">학생을 먼저 등록해 주세요</span>'}</div>`;
+ return `<div class="card"><h2>➕ 예금 등록 (교사)</h2>${who}
+ <div class="row"><label>상품</label><select id="dp2" onchange="depPick(this.value)"><option value="10,4">🟧 상품 1 · 10% / 4주</option><option value="5,2">🟦 상품 2 · 5% / 2주</option><option value="x">✏️ 직접 설정</option></select>
+ <label>이율(%)</label><input id="dr2" type="number" min="0" step="0.1" value="10" style="width:70px"><label>기간(주)</label><input id="dw2" type="number" min="1" value="4" style="width:70px"></div>
+ <div class="row"><label>원금</label><input id="da2" type="number" min="1" placeholder="예금 금액" style="width:120px"><label>가입일</label><input id="dd2" type="date" value="${today()}"></div>
+ <div class="row"><label style="white-space:nowrap"><input type="checkbox" id="dx2" checked> 통장에 출금 기록도 남기기 (가입일 기준)</label></div>
+ <div class="row"><button onclick="addDepT(${fixed?`'${fixed}'`:'null'})">예금 등록</button></div>
+ <div class="mut">등록하면 「진행중」 예금이 되고, 만기가 되면 「만기 지급」으로 원금+이자를 통장에 넣어요. 이미 통장에서 원금이 빠진 예금이라면 출금 기록 체크를 꺼 주세요.</div></div>`}
+function depPick(v){if(v==='x')return;const [r,w]=v.split(',');$('#dr2').value=r;$('#dw2').value=w}
+function depAll(y){document.querySelectorAll('.dsel').forEach(c=>c.checked=!!y)}
+async function addDepT(fixed){const ids=fixed?[fixed]:[...document.querySelectorAll('.dsel:checked')].map(c=>c.value);
+ const a=Math.round(+$('#da2').value),rt=+$('#dr2').value,wk=Math.round(+$('#dw2').value),start=$('#dd2').value,wr=$('#dx2').checked;
+ if(!ids.length)return toast('학생을 선택해 주세요');if(!(a>0))return toast('원금을 적어 주세요');if(!(rt>=0))return toast('이율을 확인해 주세요');if(!(wk>=1))return toast('기간(주)을 확인해 주세요');if(!start)return toast('가입일을 골라 주세요');
+ const names=ids.map(i=>st(i)?.name).join(', ');
+ if(!await ask(`${names}: ${W(a)}을 ${rt}% / ${wk}주 예금으로 등록할까요?${wr?' 통장에 출금 기록도 남아요.':''}`))return;
+ const skip=[];await mut(s=>{ids.forEach(id=>{if(!st(id))return;if(wr&&bal(id)<a){skip.push(st(id).name);return}
+  const d={id:uid(),sid:id,amt:a,rate:rt,weeks:wk,start,status:'active',by:'teacher'};s.deps.push(d);
+  if(wr)addTx(id,`정기예금 가입 (${rt}%·${wk}주, ${mdD(start)}~${mdD(depEnd(d))})`,'out',a,'ok','teacher',start)})});
+ toast(skip.length?`잔액이 부족해서 제외했어요: ${skip.join(', ')}`:'예금을 등록했어요')}
+async function delDep(id){if(!await ask('이 예금 기록을 삭제할까요? (통장 입출금 기록은 그대로 남아요. 진행중 예금이면 만기 지급도 사라져요)'))return;mut(s=>{s.deps=s.deps.filter(x=>x.id!==id)})}
+function depAdmin(){const rows=S.deps.slice().sort((a,b)=>a.start<b.start?1:-1).map(d=>{const rt=d.rate||10,wk=d.weeks||4,it=Math.round(d.amt*rt/100),end=depEnd(d),
+  stt=d.status==='wait'?'<span class="tag tgy">⏳ 승인대기</span>':d.status==='active'?`<span class="tag tbl">🔵 진행중</span>`:d.status==='done'?'<span class="tag tgr">🟢 만기 완료</span>':'<span class="tag tre">🔴 반려</span>';
+  return `<tr><td>${esc(st(d.sid)?.name||'?')}</td><td>${d.start.slice(5)}</td><td><span class="tag ${rt===5?'t2':'t1'}">${rt}% · ${wk}주</span></td><td class="n">${W(d.amt)}</td><td class="n">${W(it)}</td><td class="n">${W(d.amt+it)}</td><td>${end.slice(5)}</td><td>${stt}</td><td style="white-space:nowrap">${d.status==='active'?`<button class="g" onclick="matureDep('${d.id}')">만기 지급</button> `:''}<button class="r" onclick="delDep('${d.id}')">삭제</button></td></tr>`}).join('');
+ return depForm(null)+`<div class="card"><b>전체 학생 예금 내역</b><div class="tw"><table><tr><th>학생</th><th>가입일</th><th>상품</th><th>원금</th><th>이자</th><th>만기금액</th><th>만기일</th><th>상태</th><th></th></tr>${rows||'<tr><td colspan="9" class="mut">예금 내역이 없어요</td></tr>'}</table></div></div>`}
+
+// ───── 경매 ─────
+// 규칙: 학생이 원하는 입찰가를 적는다 → 마감하면 높은 입찰가부터 수량만큼 낙찰 → 낙찰자 모두 「낙찰자 중 가장 낮은 입찰가」를 통장에서 낸다.
+//  (같은 금액이면 먼저 입찰한 학생 우선 · 잔액이 모자란 학생은 제외하고 다음 순위로 넘어가요)
+function aucCalc(a){let pool=a.bids.filter(b=>b.bid>=(a.min||0)).slice().sort((x,y)=>y.bid-x.bid||((x.t||0)-(y.t||0)));const failed=[];
+ for(;;){const w=pool.slice(0,a.qty||1);if(!w.length)return{winners:[],price:0,failed};const price=Math.min(...w.map(x=>x.bid)),bad=w.find(x=>bal(x.sid)<price);
+  if(!bad)return{winners:w.map(x=>({sid:x.sid,bid:x.bid})),price,failed};failed.push({sid:bad.sid,bid:bad.bid});pool=pool.filter(x=>x!==bad)}}
+async function aucForm(id){const a=id?S.auctions.find(x=>x.id===id):null;
+ const v=await form(a?'경매 수정':'경매 올리기',[{k:'title',label:'경매 대상',val:a?a.title:''},{k:'qty',label:'수량(낙찰 인원)',type:'number',val:a?a.qty:1},{k:'min',label:'최소 입찰가',type:'number',val:a?a.min:0},{k:'note',label:'설명(선택)',val:a?a.note||'':''}]);
+ if(!v)return;const title=v.title.trim(),qty=Math.round(+v.qty),min=Math.max(0,Math.round(+v.min)||0);if(!title||!(qty>=1))return toast('경매 대상과 수량(1 이상)을 확인해 주세요');
+ mut(s=>{if(a){const x=s.auctions.find(y=>y.id===id);if(x&&x.status==='open')Object.assign(x,{title,qty,min,note:v.note.trim()})}else s.auctions.push({id:uid(),title,qty,min,note:v.note.trim(),status:'open',created:today(),bids:[]})})}
+async function bidAuc(id){const a=S.auctions.find(x=>x.id===id);if(!a||a.status!=='open')return toast('이미 끝난 경매예요');const mine=a.bids.find(b=>b.sid===me);
+ const v=await ask(`「${a.title}」에 얼마까지 낼 수 있나요? (원하는 입찰 가격)${a.min?` 최소 ${a.min}구미부터예요.`:''} 낙찰되면 낙찰자 중 가장 낮은 입찰가만큼 통장에서 나가요. 현재 잔액 ${bal(me)}구미`,{input:mine?mine.bid:a.min||''});if(v===false)return;
+ const n=Math.round(+v);if(!(n>0))return toast('입찰 가격을 적어 주세요');if(n<(a.min||0))return toast(`최소 입찰가(${a.min}구미) 이상으로 적어 주세요`);if(n>bal(me))return toast('잔액보다 높게 입찰할 수 없어요');
+ mut(s=>{const x=s.auctions.find(y=>y.id===id);if(!x||x.status!=='open')return;const b=x.bids.find(y=>y.sid===me);if(b){b.bid=n;b.t=Date.now()}else x.bids.push({sid:me,bid:n,t:Date.now()})})}
+async function cancelBid(id){if(!await ask('입찰을 취소할까요?'))return;mut(s=>{const x=s.auctions.find(y=>y.id===id);if(x&&x.status==='open')x.bids=x.bids.filter(b=>b.sid!==me)})}
+async function finishAuc(id){const a=S.auctions.find(x=>x.id===id);if(!a)return;const c=aucCalc(a),nm2=x=>st(x.sid)?.name||'?';
+ if(!await ask(c.winners.length?`「${a.title}」 경매를 마감할까요? 낙찰: ${c.winners.map(nm2).join(', ')} · 낙찰가 ${c.price}구미. 낙찰된 학생 통장에서 ${c.price}구미씩 바로 출금돼요.`:`「${a.title}」 경매를 마감할까요? 낙찰될 학생이 없어요.`))return;
+ mut(s=>{const x=s.auctions.find(y=>y.id===id);if(!x||x.status!=='open')return;const r=aucCalc(x);
+  r.winners.forEach(w=>addTx(w.sid,`경매 낙찰: ${x.title} (낙찰가 ${r.price}구미)`,'out',r.price,'ok','teacher',today(),'auction'));
+  x.status='done';x.res={winners:r.winners,price:r.price,failed:r.failed,date:today()}})}
+async function delAuc(id){const a=S.auctions.find(x=>x.id===id);if(!a)return;if(!await ask(a.status==='done'?'이 경매 기록을 삭제할까요? (이미 출금된 통장 기록은 그대로 남아요)':'이 경매를 삭제할까요? 입찰 내용도 사라져요.'))return;mut(s=>{s.auctions=s.auctions.filter(x=>x.id!==id)})}
+function aucTab(){const T=view.teacher,nn=id=>esc(st(id)?.name||'?');
+ const op=S.auctions.filter(a=>a.status==='open').slice().reverse(),dn=S.auctions.filter(a=>a.status==='done').slice().sort((a,b)=>((b.res&&b.res.date)||'')<((a.res&&a.res.date)||'')?-1:1);
+ const head=T?`<div class="card"><h2>🔨 경매</h2><div class="row"><button onclick="aucForm()">➕ 경매 올리기</button></div><div class="mut">경매 대상을 올리면 학생들이 원하는 입찰 가격을 적어요. 마감하면 가장 높은 가격부터 수량만큼 낙찰되고, 낙찰된 학생은 모두 「낙찰자 중 가장 낮은 입찰가」를 통장에서 내요.</div></div>`:'';
+ const openT=T?`<div class="card"><b>🟨 진행중인 경매</b></div>`+(op.map(a=>{const c=aucCalc(a),rk=a.bids.slice().sort((x,y)=>y.bid-x.bid||((x.t||0)-(y.t||0))),wset=new Set(c.winners.map(w=>w.sid));
+  return `<div class="card"><div class="row"><b>${esc(a.title)}</b> <span class="tag tye">🟨 진행중</span> <span>수량 ${a.qty}개 · 최소 ${W(a.min||0)} · 입찰 ${a.bids.length}명</span></div>${a.note?`<div class="mut">${esc(a.note)}</div>`:''}
+  <div class="row">${rk.map(b=>`<span class="tag ${wset.has(b.sid)?'tgr':'tgy'}">${nn(b.sid)} ${W(b.bid)}</span>`).join('')||'<span class="mut">아직 입찰이 없어요</span>'}</div>
+  <div class="mut">${c.winners.length?`지금 마감하면 → 낙찰 ${c.winners.map(w=>nn(w.sid)).join(', ')} · 낙찰가 ${W(c.price)}${c.failed.length?` · 잔액 부족으로 제외: ${c.failed.map(f=>nn(f.sid)).join(', ')}`:''}`:'지금 마감하면 낙찰자가 없어요'}</div>
+  <div class="row"><button class="g" onclick="finishAuc('${a.id}')">경매 마감·낙찰</button><button class="s" onclick="aucForm('${a.id}')">수정</button><button class="r" onclick="delAuc('${a.id}')">삭제</button></div></div>`}).join('')||'<div class="card mut">진행중인 경매가 없어요. 「경매 올리기」를 눌러 주세요.</div>')
+ :`<div class="card"><b>🟨 진행중인 경매</b><div class="tw"><table><tr><th>경매 대상</th><th>수량</th><th>최소 입찰가</th><th>입찰</th><th>내 입찰</th><th></th></tr>${op.map(a=>{const m=a.bids.find(b=>b.sid===me);return `<tr><td style="text-align:left">${esc(a.title)}${a.note?`<div class="mut" style="white-space:normal">${esc(a.note)}</div>`:''}</td><td>${a.qty}개</td><td class="n">${W(a.min||0)}</td><td>${a.bids.length}명</td><td class="n">${m?W(m.bid):'-'}</td><td style="white-space:nowrap"><button class="${m?'s':''}" onclick="bidAuc('${a.id}')">${m?'입찰 수정':'입찰하기'}</button>${m?` <button class="s" onclick="cancelBid('${a.id}')">취소</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="6" class="mut">지금은 진행중인 경매가 없어요</td></tr>'}</table></div><div class="mut">원하는 입찰 가격을 적어요. 높은 가격을 적은 학생부터 수량만큼 낙찰되고, 낙찰되면 낙찰자 중 가장 낮은 입찰가만 통장에서 나가요. 현재 잔액 ${W(bal(me))}</div></div>`;
+ const doneT=`<div class="card"><b>✅ 완료된 경매</b><div class="tw"><table><tr><th>날짜</th><th>경매 대상</th><th>낙찰가</th><th>낙찰자</th>${T?'<th></th>':'<th>내 결과</th>'}</tr>${dn.map(a=>{const r=a.res||{winners:[],price:0,failed:[]},w=r.winners.find(x=>x.sid===me),m=a.bids.find(b=>b.sid===me);
+  const mine=w?`<span class="tag tgr">🟢 낙찰 -${W(r.price)}</span>`:m?`<span class="tag tgy">낙찰 안 됨 (입찰 ${W(m.bid)})${r.failed.some(f=>f.sid===me)?' · 잔액 부족':''}</span>`:'<span class="mut">입찰 안 함</span>';
+  return `<tr><td>${(r.date||'').slice(5).replace('-','/')}</td><td style="text-align:left">${esc(a.title)}</td><td class="n">${r.winners.length?W(r.price):'-'}</td><td style="text-align:left">${r.winners.map(x=>nn(x.sid)).join(', ')||'<span class="mut">낙찰자 없음</span>'}${T&&r.failed.length?`<div class="mut">잔액 부족 제외: ${r.failed.map(f=>nn(f.sid)).join(', ')}</div>`:''}</td>${T?`<td><button class="r" onclick="delAuc('${a.id}')">삭제</button></td>`:`<td>${mine}</td>`}</tr>`}).join('')||`<tr><td colspan="5" class="mut">완료된 경매가 아직 없어요</td></tr>`}</table></div></div>`;
+ return head+openT+doneT}
 function studentHTML(){const s=st(me);
  return `<div class="top"><h1>🍠 ${esc(s.name)}의 통장${roleOf(me)?` <span class="tag t2">🏅 ${roleOf(me)}</span>`:''}</h1><button class="s" onclick="logout()">나가기</button></div>
  ${assetCard(me)}
- ${tabsHTML([['ledger','입출금 통장'],['dep','예금'],['cat','수입처·소비처'],['job','직업'],['stock','주식'],['prop','부동산'],['gig','아르바이트']])}
- ${view.tab==='ledger'?ledger(me,true):view.tab==='dep'?deposits(me,true):view.tab==='prop'?props(me,true):view.tab==='job'?jobsTab():view.tab==='gig'?gigTab():view.tab==='cat'?catTab():stocks(me,true)}`}
+ ${tabsHTML([['ledger','입출금 통장'],['dep','예금'],['cat','수입처·소비처'],['job','직업'],['stock','주식'],['prop','부동산'],['gig','아르바이트'],['auction','경매']])}
+ ${view.tab==='ledger'?ledger(me,true):view.tab==='dep'?deposits(me,true):view.tab==='prop'?props(me,true):view.tab==='job'?jobsTab():view.tab==='gig'?gigTab():view.tab==='auction'?aucTab():view.tab==='cat'?catTab():stocks(me,true)}`}
 
 function teacherHTML(){
- const pend=S.preq.filter(t=>t.status==='wait').length+S.tx.filter(t=>t.status==='wait').length+S.deps.filter(d=>d.status==='wait').length+cands().length;
+ const pend=S.preq.filter(t=>t.status==='wait').length+S.tx.filter(t=>t.status==='wait').length+S.deps.filter(d=>d.status==='wait').length+dueDeps().length+cands().length;
  let body='';
- if(view.tab==='queue')body=queue();else if(view.tab==='reset')body=resetTab();else if(view.tab==='pay')body=payHTML();else if(view.tab==='stu')body=manageStu();else if(view.tab==='stk')body=manageStk()+'<h2>👀 학생에게 보이는 화면 (삭제 버튼 포함)</h2>'+stocks(null,false);else if(view.tab==='estate')body=estateTab();else if(view.tab==='job')body=jobsTab();else if(view.tab==='cat')body=catTab();else if(view.tab==='gig')body=gigTab();
+ if(view.tab==='queue')body=queue();else if(view.tab==='reset')body=resetTab();else if(view.tab==='auction')body=aucTab();else if(view.tab==='depadm')body=depAdmin();else if(view.tab==='pay')body=payHTML();else if(view.tab==='stu')body=manageStu();else if(view.tab==='stk')body=manageStk()+'<h2>👀 학생에게 보이는 화면 (삭제 버튼 포함)</h2>'+stocks(null,false);else if(view.tab==='estate')body=estateTab();else if(view.tab==='job')body=jobsTab();else if(view.tab==='cat')body=catTab();else if(view.tab==='gig')body=gigTab();
  else{const sel=`<div class="row"><select onchange="view.sid=this.value;render()"><option value="">학생 선택</option>${S.students.map(s=>`<option value="${s.id}" ${view.sid===s.id?'selected':''}>${esc(s.name)} (${W(bal(s.id))})</option>`).join('')}</select></div>`;
   body=sel+(view.sid&&st(view.sid)?assetCard(view.sid)+`<div class="tabs"><button class="s" onclick="view.sub='ledger';render()">입출금</button><button class="s" onclick="view.sub='dep';render()">예금</button><button class="s" onclick="view.sub='stock';render()">주식</button><button class="s" onclick="view.sub='prop';render()">부동산</button></div>`+((view.sub||'ledger')==='ledger'?ledger(view.sid,false):view.sub==='dep'?deposits(view.sid,false):view.sub==='prop'?props(view.sid,false):stocks(view.sid,false)):'<div class="mut">학생을 선택하면 통장을 볼 수 있어요.</div>')}
- return `<div class="top"><h1>👩‍🏫 교사 화면</h1><button class="s" onclick="logout()">나가기</button></div>
- ${mktCtl()}${tabsHTML([['queue','승인 대기 '+(pend?`(${pend})`:'')],['view','학생 통장 보기'],['pay','지급/징수'],['cat','수입처·소비처'],['job','직업'],['stk','주식 관리'],['gig','아르바이트'],['estate','부동산 관리'],['stu','학생 관리'],['reset','탭 관리']])}${body}`}
+ return `<div class="top"><h1>👩‍🏫 교사 화면</h1><span><button class="g" onclick="backupJSON()">💾 데이터 백업</button> <button class="s" onclick="pickRestore()">📂 백업 복원</button> <button class="s" onclick="logout()">나가기</button></span></div>
+ ${mktCtl()}${tabsHTML([['queue','승인 대기 '+(pend?`(${pend})`:'')],['view','학생 통장 보기'],['pay','지급/징수'],['depadm','예금'],['cat','수입처·소비처'],['job','직업'],['stk','주식 관리'],['gig','아르바이트'],['estate','부동산 관리'],['auction','경매'],['stu','학생 관리'],['reset','탭 관리']])}${body}`}
 
 function queue(){
  const n=id=>esc(st(id)?.name||'?');const r=[];
  S.tx.filter(t=>t.status==='wait').forEach(t=>r.push(`<tr><td>${n(t.sid)}</td><td>통장기록: ${esc(t.memo)} (${t.date.slice(5)})</td><td class="${t.type==='in'?'in':'out'}">${t.type==='in'?'+':'-'}${W(t.amt)}</td><td><button class="g" onclick="dec('tx','${t.id}',1)">승인</button> <button class="r" onclick="rej('tx','${t.id}')">반려</button></td></tr>`));
  S.deps.filter(d=>d.status==='wait').forEach(d=>r.push(`<tr><td>${n(d.sid)}</td><td>정기예금 가입 신청</td><td>${W(d.amt)}</td><td><button class="g" onclick="dec('dep','${d.id}',1)">승인</button> <button class="r" onclick="rej('dep','${d.id}')">반려</button></td></tr>`));
  S.preq.filter(q=>q.status==='wait').sort((a,b)=>(b.bid||0)-(a.bid||0)).forEach(q=>{const p=S.props.find(x=>x.id===q.prop),cn=S.preq.filter(o=>o.prop===q.prop&&o.status==='wait').length;r.push(`<tr><td>${n(q.sid)}</td><td>부동산 ${esc(p?.name||'')}: ${sn(p?.owner)} → ${n(q.sid)} <span class="mut">공시가 ${W(p?priceOf(p):q.price)} · 희망가 <b>${W(q.bid||q.price)}</b>${cn>1?' · 🔥 경쟁 신청 '+cn+'명':''}${S.props.filter(o=>o.owner===q.sid).length>=1?' · 재산세 20% '+W(Math.round((q.bid||q.price)*0.2)):''}</span></td><td>${W(q.bid||q.price)}</td><td><button class="g" onclick="dec('prq','${q.id}',1)">승인</button> <button class="r" onclick="rej('prq','${q.id}')">반려</button></td></tr>`)});
+ dueDeps().forEach(d=>{const rt=d.rate||10,it=Math.round(d.amt*rt/100);r.push(`<tr><td>${n(d.sid)}</td><td>🟧 정기예금 만기 도래 <span class="mut">(${rt}%·${d.weeks||4}주, ${mdD(d.start)}~${mdD(depEnd(d))}) 원금 ${W(d.amt)} + 이자 ${W(it)}</span></td><td class="in">+${W(d.amt+it)}</td><td><button class="g" onclick="matureDep('${d.id}')">만기 지급 승인</button></td></tr>`)});
  cands().forEach(({b,l})=>r.push(`<tr><td>${nm(b.sid)}</td><td>${l.tk} 거래 <span class="mut"><span class="buy">사는 사람 ${nm(b.sid)} (${W(b.price)})</span> ↔ <span class="sell">파는 사람 ${nm(l.sid)} (${W(l.price)})</span></span></td><td>${W(l.price)}</td><td><button class="g" onclick="deal('${b.id}','${l.id}')">거래 승인</button></td></tr>`));
  return `<div class="card"><div class="tw"><table><tr><th>학생</th><th>내용</th><th>금액</th><th></th></tr>${r.join('')||'<tr><td colspan="4" class="mut">대기 중인 요청이 없어요 🎉</td></tr>'}</table></div>${r.length?'<div class="row"><button onclick="allOk()">전부 승인</button></div>':''}</div>`}
 function apply(s,kind,id,yes,reason){
@@ -486,7 +583,7 @@ function apply(s,kind,id,yes,reason){
 }
 async function dec(k,id,y){if(!await ask('승인할까요?'))return;mut(s=>apply(s,k,id,y))}
 async function rej(k,id){const rs=await ask('반려 이유를 적어 주세요 (학생에게 보여요)',{text:''});if(rs===false)return;mut(s=>apply(s,k,id,0,String(rs).trim()))}
-async function allOk(){if(!await ask('대기 중인 요청과 주식 거래를 전부 승인할까요?'))return;mut(s=>{s.tx.filter(t=>t.status==='wait').forEach(t=>apply(s,'tx',t.id,1));s.deps.filter(d=>d.status==='wait').forEach(d=>apply(s,'dep',d.id,1));s.preq.filter(o=>o.status==='wait').sort((a,b)=>(b.bid||0)-(a.bid||0)).forEach(o=>apply(s,'prq',o.id,1));cands().forEach(({b,l})=>dealApply(s,b.id,l.id))})}
+async function allOk(){if(!await ask('대기 중인 요청과 주식 거래, 만기 예금 지급을 전부 승인할까요?'))return;mut(s=>{s.deps.filter(d=>d.status==='active'&&depEnd(d)<=today()).forEach(d=>matureApply(s,d.id));s.tx.filter(t=>t.status==='wait').forEach(t=>apply(s,'tx',t.id,1));s.deps.filter(d=>d.status==='wait').forEach(d=>apply(s,'dep',d.id,1));s.preq.filter(o=>o.status==='wait').sort((a,b)=>(b.bid||0)-(a.bid||0)).forEach(o=>apply(s,'prq',o.id,1));cands().forEach(({b,l})=>dealApply(s,b.id,l.id))})}
 
 const ITEMS=[['2주급 지급','in'],['소득세','out'],['자릿세','out'],['수도요금','out'],['전기요금','out'],['건강보험료','out'],['급식비','out'],['기타(직접입력)','out']];
 const CART=['자릿세','수도요금','전기요금','건강보험료','급식비'];
@@ -532,7 +629,7 @@ function manageStu(){
  <div class="tw"><table><tr><th>이름</th><th>잔액</th><th>비밀번호</th><th></th></tr>${S.students.map(s=>`<tr><td>${esc(s.name)}</td><td class="n">${W(bal(s.id))}</td><td>${s.pin?'설정됨':'미설정'} <button class="s" onclick="rstPin('${s.id}')">초기화</button></td><td><button class="r" onclick="delSt('${s.id}')">삭제</button></td></tr>`).join('')}</table></div></div>
  <div class="card"><h2>교사 비밀번호</h2><div class="mut">교사 비밀번호는 Cloudflare 설정의 환경변수 <b>ADMIN_PASSWORD</b> 에서 바꿔요. (안전을 위해 화면에서는 바꾸지 않아요)</div></div>`}
 function manageStk(){
- return `${discEditor()}<div class="card"><h2>주식 종목·시세</h2>${S.stocks.map(x=>`<div class="row">${esc(x.name)} <b>${esc(x.code)}</b> <input type="number" min="1" value="${x.price}" style="width:90px" onchange="setPrice('${x.id}',this.value)">구미 · 총 발행 <input type="number" min="1" value="${x.limit||''}" style="width:60px" onchange="setLimit('${x.id}',this.value)">주 <input id="sf${x.id}" type="number" min="1" value="1" style="width:46px">주를 <input id="st${x.id}" type="number" min="2" value="2" style="width:46px">주로 <button class="s" onclick="splitStock('${x.id}')">액면분할</button> <button class="r" onclick="delStock('${x.id}')">삭제</button></div>`).join('')}
+ return `${discEditor()}<div class="card"><h2>주식 종목·시세</h2>${S.stocks.map(x=>`<div class="row">${esc(x.name)} <b>${esc(x.code)}</b> <input type="number" min="1" value="${x.price}" style="width:90px" onchange="setPrice('${x.id}',this.value)">구미 · 총 발행 <input type="number" min="0" value="${S.sh.filter(y=>y.stock===x.id).length}" style="width:60px" onchange="setLimit('${x.id}',this.value)">주 <input id="sf${x.id}" type="number" min="1" value="1" style="width:46px">주를 <input id="st${x.id}" type="number" min="2" value="2" style="width:46px">주로 <button class="s" onclick="splitStock('${x.id}')">액면분할</button> <button class="r" onclick="delStock('${x.id}')">삭제</button></div>`).join('')}
  <div class="row"><input id="sn" placeholder="새 종목 이름"><input id="sc" placeholder="티커 (예: FOOD)" style="width:110px"><input id="sp" type="number" placeholder="시작가" style="width:90px"><input id="sl" type="number" placeholder="총 발행(주)" style="width:90px"><button onclick="addStock()">종목 추가</button></div>
  <h2>📰 뉴스 등록</h2><div class="mut">가격 공시는 맨 위 「가격 공시」에서 회차별로 해요. 아래 가격 칸은 급하게 현재가만 고칠 때 써요.</div><div class="row"><select id="nm"><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option></select><select id="nh"><option value="a">전반기</option><option value="b">후반기</option></select><select id="nk"><option value="trade">거래 주간 뉴스</option><option value="notice">거래 불가능 주간 후속 뉴스</option></select></div><div class="row"><select id="nsx"><option value="all">전체</option>${S.stocks.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select><input id="nt" placeholder="뉴스 내용" size="30"><button onclick="addNews()">뉴스 등록</button></div><div class="mut">등록한 뉴스는 아래 「학생에게 보이는 화면」에서 확인하고 삭제할 수 있어요. 뒤에 나온 뉴스가 아래에 나와요.</div><h2>발행 주식 매도 등록</h2><div class="mut">아직 아무도 갖지 않은 주식(FOOD-001…)을 판매 주문으로 올려요. 번호 순서대로 올라가요.</div><div class="row"><select id="ps">${S.stocks.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select><input id="pq" type="number" placeholder="판매 가격" style="width:110px"><input id="pn" type="number" placeholder="수량" style="width:70px"><button onclick="poolSell()">매도 등록</button><button class="r" onclick="delPoolOrders()">발행사 매도주문 모두 삭제</button></div></div>
  `}
@@ -540,7 +637,13 @@ function addSt(){const n=$('#ns').value.split(',').map(x=>x.trim()).filter(Boole
 async function rstPin(id){if(await ask('비밀번호를 초기화할까요? 학생이 다시 만들게 돼요.'))mut(s=>st.call(0,id)&&(s.students.find(x=>x.id===id).pin=''))}
 async function delSt(id){if(await ask('학생과 모든 기록을 삭제할까요?'))mut(s=>{s.students=s.students.filter(x=>x.id!==id);['tx','deps','orders','preq'].forEach(k=>s[k]=s[k].filter(x=>x.sid!==id));s.props.forEach(x=>{if(x.owner===id)x.owner=''});s.sh.forEach(x=>{if(x.owner===id)x.owner=''});s.ord.forEach(o=>{if(o.sid===id&&o.status==='open')o.status='cancel'});s.apps=s.apps.filter(a=>a.sid!==id);s.assign=s.assign.filter(a=>a.sid!==id)})}
 function setPrice(id,v){mut(s=>{const x=s.stocks.find(y=>y.id===id),p=Math.max(1,Math.round(+v));if(p===x.price)return;x.price=p;x.hist.push({p,n:'직접 수정',d:today()})})}
-function setLimit(id,v){mut(s=>{s.stocks.find(x=>x.id===id).limit=Math.round(+v)||0})}
+async function delSplit(id){if(!await ask('이 액면분할 안내를 지울까요? (학생 통장 기록과 주식 수는 그대로예요)'))return;mut(s=>{s.splits=s.splits.filter(x=>x.id!==id)})}
+function setLimit(id,v){const n=Math.max(0,Math.round(+v)||0);return mut(s=>{const x=s.stocks.find(y=>y.id===id);if(!x)return;
+  const all=s.sh.filter(y=>y.stock===id),cur=all.length;
+  if(n<cur){const num=tk=>+String(tk).split('-').pop()||0,pool=all.filter(y=>!y.owner).sort((a,b)=>num(b.tk)-num(a.tk)),cut=Math.min(cur-n,pool.length),rm=new Set(pool.slice(0,cut).map(y=>y.tk));
+   s.sh=s.sh.filter(y=>!(y.stock===id&&rm.has(y.tk)));s.ord.forEach(o=>{if(o.status==='open'&&o.tk&&rm.has(o.tk))o.status='cancel'});
+   x.limit=cur-cut;if(cut<cur-n)toast(`학생이 가진 주식이 있어서 ${x.limit}주까지만 줄일 수 있어요`)}
+  else x.limit=n})}
 async function delStock(id){if(await ask('종목을 삭제할까요? (보유·주문 기록은 남아요)'))mut(s=>{s.stocks=s.stocks.filter(x=>x.id!==id)})}
 function addStock(){const n=$('#sn').value.trim(),p=+$('#sp').value;if(n&&p>0)mut(s=>s.stocks.push({id:uid(),name:n,code:($('#sc').value.trim().toUpperCase()||'STK'),price:Math.round(p),limit:Math.round(+$('#sl').value)||0}))}
 init();
