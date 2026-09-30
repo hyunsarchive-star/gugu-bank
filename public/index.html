@@ -371,7 +371,7 @@ async function finalJobs(){if(!await ask('최종 확정할까요? 결과와 2주
  mut(s=>{const r2=s.apps.filter(a=>a.round===2);allocate(s,r2.map(a=>({sid:a.sid,job:a.job,bid:a.bid??BASE})));s.apps=[];s.job.stage='done';s.job.paid=false})}
 async function setStage(k){if(!await ask('지원 받는 단계로 되돌릴까요?'))return;mut(s=>{s.job.stage=k})}
 async function newRound(){if(!await ask('새 회차를 시작할까요? 지원 내용과 지금 배정이 모두 지워져요. (급여를 먼저 보냈는지 확인하세요)'))return;mut(s=>{s.apps=[];s.assign=[];s.jobs.forEach(j=>{delete j.locked});s.job.stage='apply';s.job.paid=false;s.job.lost=[]})}
-async function manualAssign(sid,jid){if(!await ask('직업 배정을 바꿀까요?')){render();return}mut(s=>{s.assign=s.assign.filter(a=>a.sid!==sid);const j=s.jobs.find(x=>x.id===jid);if(j)s.assign.push({sid,job:jid,pay:j.contract?0:BASE,manual:1})})}
+function manualAssign(sid,jid){return mut(s=>{s.assign=s.assign.filter(a=>a.sid!==sid);const j=s.jobs.find(x=>x.id===jid);if(j)s.assign.push({sid,job:jid,pay:j.contract?0:BASE,manual:1})})}
 function setPay(sid,v){mut(s=>{const a=s.assign.find(x=>x.sid===sid);if(a)a.pay=Math.max(0,Math.round(+v)||0)})}
 function setJob(id,k,v){mut(s=>{const j=s.jobs.find(x=>x.id===id);j[k]=k==='slots'?Math.max(1,Math.round(+v)||1):v})}
 async function delJob(id){if(!await ask('직업을 삭제할까요?'))return;mut(s=>{s.jobs=s.jobs.filter(j=>j.id!==id);s.apps=s.apps.filter(a=>a.job!==id);s.assign=s.assign.filter(a=>a.job!==id)})}
