@@ -25,7 +25,7 @@ td.n{text-align:right}.pend td{opacity:.55}.bal{font-size:26px;color:var(--ok)}.
 tr.meRow td{background:#fff3c4;color:#222}
 .tpu{background:#e3d4ff}.tye{background:#fff0a6}
 .tag{color:#222}
-.c-dev{background:#e2f08d}.c-comm{background:#9fe8ee}.c-wel{background:#ffc4e0}.c-right{background:#f0c2ff}.c-snack{background:#ffe1a8}.c-fine{background:#ff9b9b}.c-taxuse{background:#c8b8a0}.c-auc{background:#ffd0a0}
+.c-dev{background:#e2f08d}.c-comm{background:#9fe8ee}.c-wel{background:#ffc4e0}.c-right{background:#f0c2ff}.c-snack{background:#ffe1a8}.c-fine{background:#ff9b9b}.c-taxuse{background:#c8b8a0}.c-auc{background:#ffd0a0}.c-exempt{background:#c5d3ff}.c-exj{background:#c5d3ff}.c-exb{background:#b7f0c8}.c-ext{background:#fff29a}
 .tgr{background:#b8ecc0}.tye{background:#fff06a}.tpu{background:#b7a4f5}.tbl{background:#a9cdff}.t1{background:#ffc98f}.tre{background:#f0b4a0}
 textarea{font:inherit}
 .c-merit{background:#8fe3c8}
@@ -48,10 +48,10 @@ function seedCatalog(){const A=[
 ['in','입금','직업에 따른 급여 (2주급)',250,''],['in','자기 계발','우수 주제글쓰기 선정 - <베스트 문장>',25,''],['in','자기 계발','우수 독서록 작성',15,''],
 ['in','공동체 생활','모범 시민 (봉사) - 선생님이 주실 때',20,''],['in','공동체 생활','우수 모둠활동 - 선생님이 주실 때',15,''],['in','공동체 생활','복도의 시민 - 반 전체가 빠르고 조용히 줄 잘 섰을 때',15,''],
 ['in','복지비','생일 축하금',30,"생일 당일 기준 '생일+3일, -3일 내'로 수령 · 방학 중 생일인 사람일 경우 '방학-3일 또는 개학+3일 내'로 수령 · 본인이 알아서 챙겨받지 못한 사람은 소급하지 않음 (지나면 못받음)"],['in','복지비','명절, 학기말 보너스 + 어린이날 등',30,''],
-['out','권리 구매','주제 글쓰기 면제권 (1회)',50,'2주 연속으로 구매할 수 X, 2주에 한 번'],['out','권리 구매','독서록 면제권 (1회)',30,'한 주 내에 주제글쓰기 면제와 동시에는 구매할 수 X, 2주에 한 번'],
+['out','주글 면제권','주제 글쓰기 면제권 (1회)',50,'2주에 한 번만 (지난주에 썼다면 이번주에는 X) · 독서록 면제권과 같은 주에 함께 X'],['out','독서록 면제권','독서록 면제권 (1회)',30,'2주에 한 번만 (지난주에 썼다면 이번주에는 X) · 주글 면제권과 같은 주에 함께 X'],
 ['out','권리 구매','자리 우선 구매권',75,'원하는 자리를 미리 구매(2주 동안), 작은 랜덤'],['out','권리 구매','자리 바꾸기 1일권',30,'수업에 방해가 될 때 즉시 원위치'],
 ['out','권리 구매','급식 우선권 1일권',20,'여러 명일 때에는 장기권 구매자 우선, 급식 정리 뒤에 3번부터 가능'],['out','권리 구매','급식 우선권 3일권',55,''],['out','권리 구매','급식 우선권 5일권',90,''],
-['out','권리 구매','추억의 뽑기 참여권',30,''],['out','권리 구매','나의 직업 1일 면제권',10,''],['out','권리 구매','배움공책(오늘하루) 1일 면제권',15,''],['out','권리 구매','알림장 1일 면제권',15,''],
+['out','권리 구매','추억의 뽑기 참여권',30,''],['out','권리 구매','나의 직업 1일 면제권',10,''],['out','오늘하루 면제권','배움공책(오늘하루) 1일 면제권',15,'한 주에 3번까지 사용 가능 (4번 이상 X)'],['out','권리 구매','알림장 1일 면제권',15,''],
 ['out','권리 구매','발표 우선 1일권',10,''],['out','권리 구매','점심 시간 DJ 1회권',10,'한 곡당 10, 최대 3곡까지 가능'],['out','권리 구매','자기 자리 청소 면제 1회권',15,''],
 ['out','간식','과자 한 봉지 (과자 뽑기 중 하나, 크지 않음)',50,''],['out','간식','건빵 한 봉지',40,''],['out','간식','하리보 젤리',30,''],['out','간식','제티 - 일주일 1회 한정',20,''],
 ['out','간식','마이쮸 - 주에 5개 한정, 하루 2개 한정',10,''],['out','간식','초코파이류 (오예스, 몽쉘 등) - 주에 2회 한정',40,''],['out','간식','사탕류 (자두, 청포도 사탕 등) - 주에 3회 한정',10,''],['out','간식','오트밀 미니바이트 - 주에 10개 한정',5,''],
@@ -62,7 +62,8 @@ const blank=()=>({students:[],tx:[],deps:[],stocks:[{id:'s1',name:'고구마푸�
 let S=blank(),me=null,view={tab:'ledger',sid:null,teacher:false};
 let TOKEN=null,REV=0,ROSTER=[];
 function priceIn(p,m){const P=p.prices||{};if(P[m]!=null)return P[m];let v=null;Object.keys(P).sort().forEach(k=>{if(k<=m)v=P[k]});return v!=null?v:(Object.keys(P).length?P[Object.keys(P).sort()[0]]:0)}
-function cleanJobs(x){if(!x.catalog||!x.catalog.items)x.catalog={items:seedCatalog(),live:null};if(!x.officers)x.officers=blank().officers;
+function cleanJobs(x){if(!x.catalog||!x.catalog.items)x.catalog={items:seedCatalog(),live:null};
+ [x.catalog.items,x.catalog.live].forEach(L=>(L||[]).forEach(i=>{if(!i||!['권리 구매','면제권','주글 면제권','독서록 면제권','오늘하루 면제권'].includes(i.cat))return;const k=exKind(i.text);if(k){i.cat=EXV[k].name;if(!i.note||/2주에 한 번|2주 연속|3번 이상/.test(i.note))i.note=EXV[k].note}else if(i.cat==='면제권')i.cat='권리 구매'}));if(!x.officers)x.officers=blank().officers;
  x.jobs=x.jobs.filter(j=>!j.fixed&&j.name!=='회장·부회장');x.jobs.forEach(j=>{if(j.name==='대청소'&&j.contract==null)j.contract=true});
  x.assign=x.assign.filter(a=>!a.fixed&&x.jobs.some(j=>j.id===a.job));x.apps=x.apps.filter(a=>x.jobs.some(j=>j.id===a.job))}
 function norm(x){x=Object.assign(blank(),x);cleanJobs(x);if(x.phase>2)x.phase=x.phase%2?1:2;
@@ -121,8 +122,21 @@ async function tlogin(){const r=await api('admin-login',{method:'POST',body:{pas
 function logout(){dropAuth()}
 
 const money=t=>{const it=t.inTxt||t.info,i=it?esc(it):(t.type==='in'?'+'+W(t.amt):''),o=t.outTxt?esc(t.outTxt):(t.type==='out'?'-'+W(t.amt):'');return `<td class="n in">${i}</td><td class="n out">${o}</td>`};
-const CATS={pay:['tgr','🟩 2주급'],dev:['c-dev','📗 자기 계발'],merit:['c-merit','⭐ 우수 활동'],comm:['c-comm','🤝 공동체 생활'],wel:['c-wel','🎁 복지비'],right:['c-right','🎟 권리 구매'],snack:['c-snack','🍬 간식 구매'],fine:['c-fine','🚨 벌금'],taxuse:['c-taxuse','🏛 세금 사용처'],gig:['tye','🟨 아르바이트'],auction:['c-auc','🔨 경매'],stock:['tpu','🟪 주식'],estate:['tbl','🟦 부동산'],dep:['t1','🟧 예금'],tax:['tre','🟥 세금·공과금'],etc:['tgy','⬜ 기타']};
-function catKey(t){if(t.cat&&CATS[t.cat])return t.cat;const m=t.memo||'';if(/^아르바이트/.test(m))return 'gig';if(/^경매/.test(m))return 'auction';if(/^2주급|급여/.test(m))return 'pay';if(/부동산/.test(m))return 'estate';if(/정기예금/.test(m))return 'dep';if(/[A-Z]{3,5}-\d{3}|주식/.test(m))return 'stock';if(/소득세|자릿세|수도|전기|건강보험|급식비|\(자\)|\(소\)|세금/.test(m))return 'tax';return 'etc'}
+const EXRE=/주제 ?글쓰기 ?면제|주글 ?면제|독서록 ?면제|오늘하루[^면]*면제/;
+// 면제권 3종 (각각 따로 색깔 블록·통장 분류). 규칙은 exCheck 에서 검사해요.
+const EXV={exJ:{name:'주글 면제권',memo:'주제 글쓰기 면제권 (1회)',amt:50,note:'2주에 한 번만 (지난주에 썼다면 이번주에는 X) · 독서록 면제권과 같은 주에 함께 X'},
+ exB:{name:'독서록 면제권',memo:'독서록 면제권 (1회)',amt:30,note:'2주에 한 번만 (지난주에 썼다면 이번주에는 X) · 주글 면제권과 같은 주에 함께 X'},
+ exT:{name:'오늘하루 면제권',memo:'오늘하루 면제권 (1일)',amt:15,note:'한 주에 3번까지 사용 가능 (4번 이상 X)'}};
+const EXLIM={t:3}; // 오늘하루 면제권: 한 주에 최대 3번까지 (4번 이상 X). 바꾸려면 이 숫자만 고치면 돼요
+const exKind=m=>/주제 ?글쓰기 ?면제|주글 ?면제/.test(m||'')?'exJ':/독서록 ?면제/.test(m||'')?'exB':/오늘하루[^면]*면제/.test(m||'')?'exT':'';
+const wkIdx=d=>Math.floor((Date.parse(d+'T00:00:00Z')/864e5-4)/7); // 월요일 시작 주 번호
+function exAmt(k){const it=((S.catalog&&S.catalog.live)||[]).find(i=>i.cat===EXV[k].name);return it&&it.unit>0?it.unit:EXV[k].amt}
+function exCheck(sid,kind,date,skipId){const L=S.tx.filter(t=>t.sid===sid&&t.status!=='no'&&t.id!==skipId&&EXV[catKey(t)]),of=k=>L.filter(t=>catKey(t)===k),w=wkIdx(date);
+ if(kind==='exT'){const n=of('exT').filter(t=>wkIdx(t.date)===w).length;return n>=EXLIM.t?`오늘하루 면제권은 한 주에 4번 이상 쓸 수 없어요 (3번까지) (그 주에 이미 ${n}번)`:''}
+ if(of(kind).some(t=>Math.abs(wkIdx(t.date)-w)<=1))return `${EXV[kind].name}은 2주에 한 번만 쓸 수 있어요 (지난주나 이번주에 이미 썼어요)`;
+ const o=kind==='exJ'?'exB':'exJ';if(of(o).some(t=>wkIdx(t.date)===w))return '주글 면제권과 독서록 면제권은 같은 주에 함께 쓸 수 없어요';return ''}
+const CATS={pay:['tgr','🟩 2주급'],dev:['c-dev','📗 자기 계발'],merit:['c-merit','⭐ 우수 활동'],comm:['c-comm','🤝 공동체 생활'],wel:['c-wel','🎁 복지비'],right:['c-right','🎟 권리 구매'],exempt:['c-exempt','🎫 면제권'],exJ:['c-exj','✏️ 주글 면제권'],exB:['c-exb','📖 독서록 면제권'],exT:['c-ext','☀️ 오늘하루 면제권'],snack:['c-snack','🍬 간식 구매'],fine:['c-fine','🚨 벌금'],taxuse:['c-taxuse','🏛 세금 사용처'],gig:['tye','🟨 아르바이트'],auction:['c-auc','🔨 경매'],stock:['tpu','🟪 주식'],estate:['tbl','🟦 부동산'],dep:['t1','🟧 예금'],tax:['tre','🟥 세금·공과금'],etc:['tgy','⬜ 기타']};
+function catKey(t){if(t.cat&&t.cat!=='exempt'&&CATS[t.cat])return t.cat;const m=t.memo||'';if(/^아르바이트/.test(m))return 'gig';if(/^경매/.test(m))return 'auction';if(t.cat==='exempt'||EXRE.test(m))return exKind(m)||'exempt';if(/^2주급|급여/.test(m))return 'pay';if(/부동산/.test(m))return 'estate';if(/정기예금/.test(m))return 'dep';if(/[A-Z]{3,5}-\d{3}|주식/.test(m))return 'stock';if(/소득세|자릿세|수도|전기|건강보험|급식비|\(자\)|\(소\)|세금/.test(m))return 'tax';return 'etc'}
 const catTag=t=>{const [c,l]=CATS[catKey(t)];return `<span class="tag ${c}">${l}</span>`};
 function form(title,fields){return new Promise(res=>{const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:99;padding:16px';
  o.innerHTML=`<div class="card" style="max-width:420px;width:100%;margin:0;max-height:90vh;overflow:auto"><b id="ft"></b>${fields.map((f,i)=>`<div class="row"><label style="width:78px">${esc(f.label)}</label>${f.type==='select'?`<select id="fm${i}" style="flex:1">${f.opts.map(([v,l])=>`<option value="${esc(v)}" ${String(f.val)===String(v)?'selected':''}>${esc(l)}</option>`).join('')}</select>`:`<input id="fm${i}" type="${f.type||'text'}" value="${esc(f.val??'')}" style="flex:1;min-width:0">`}</div>`).join('')}<div class="row" style="justify-content:flex-end"><button class="s" id="fno">취소</button><button id="fok">확인</button></div></div>`;
@@ -142,10 +156,11 @@ function ledger(sid,canAdd){const T=view.teacher;
  ${(()=>{const b=S.tx.filter(t=>t.sid===sid&&ok(t));const i=b.filter(t=>t.type==='in').reduce((a,t)=>a+t.amt,0),o=b.filter(t=>t.type==='out').reduce((a,t)=>a+t.amt,0);return `<div class="mut">총 입금 ${W(i)} · 총 출금 ${W(o)}</div>`})()}
  <div class="tw"><table><tr><th>차례</th><th>거래일</th><th>내용</th><th>입금</th><th>출금</th><th>잔액</th><th>은행원 확인</th>${T?'<th></th>':''}</tr>${rows||`<tr><td colspan="${T?8:7}" class="mut">기록이 없어요</td></tr>`}</table></div></div>
  ${canAdd?`<div class="card"><h2>통장에 기록하기</h2><div class="row"><input type="date" id="td" value="${today()}"><input id="tm" placeholder="내용 (예: 문구점)" size="16">
- <select id="tt"><option value="in">입금</option><option value="out">출금</option></select><select id="tc" onchange="catPick(this.value)"><option value="">분류 (선택)</option><optgroup label="입금"><option value="comm">공동체 생활</option><option value="wel">복지비</option><option value="dev">자기 계발</option><option value="merit">우수 활동</option></optgroup><optgroup label="출금"><option value="fine">벌금</option><option value="right">권리 구매</option><option value="snack">간식 구매</option></optgroup><optgroup label="기타"><option value="taxuse">세금 사용처</option><option value="etc">기타</option></optgroup></select><input id="ta" type="number" min="0" placeholder="금액" style="width:110px"><button onclick="addMine()">기록 제출</button></div>
+ <select id="tt"><option value="in">입금</option><option value="out">출금</option></select><select id="tc" onchange="catPick(this.value)"><option value="">분류 (선택)</option><optgroup label="입금"><option value="comm">공동체 생활</option><option value="wel">복지비</option><option value="dev">자기 계발</option><option value="merit">우수 활동</option></optgroup><optgroup label="출금"><option value="fine">벌금</option><option value="right">권리 구매</option><option value="exJ">주글 면제권</option><option value="exB">독서록 면제권</option><option value="exT">오늘하루 면제권</option><option value="snack">간식 구매</option></optgroup><optgroup label="기타"><option value="taxuse">세금 사용처</option><option value="etc">기타</option></optgroup></select><input id="ta" type="number" min="0" placeholder="금액" style="width:110px"><button onclick="addMine()">기록 제출</button></div>
  <div class="mut">선생님이 확인하면 잔액에 반영돼요.</div></div>`:''}`}
-function catPick(v){if(['comm','wel','dev','merit'].includes(v))$('#tt').value='in';else if(['fine','right','snack','taxuse'].includes(v))$('#tt').value='out'}
+function catPick(v){if(['comm','wel','dev','merit'].includes(v))$('#tt').value='in';else if(['fine','right','snack','taxuse'].includes(v))$('#tt').value='out';else if(EXV[v]){$('#tt').value='out';$('#tm').value=EXV[v].memo;$('#ta').value=exAmt(v)}}
 function addMine(){const amt=+$('#ta').value,m=$('#tm').value.trim();if(!(amt>0)||!m)return toast('내용과 금액을 적어요');
+ const ck=$('#tc').value;if(EXV[ck]){if($('#tt').value!=='out')return toast('면제권은 출금으로 기록해요');const why=exCheck(me,ck,$('#td').value||today());if(why)return toast(why)}
  mut(s=>addTx(me,m,$('#tt').value,amt,'wait','student',$('#td').value,$('#tc').value))}
 
 function deposits(sid,canAdd){
@@ -383,20 +398,21 @@ function jobsTab(){const T=view.teacher,stage=S.job.stage,open=S.mkt.job,td=t=>`
   h+=`<div class="card"><b>🟢 최종 확정 결과</b><div class="tw"><table><tr><th>부서</th><th>직업</th><th>맡은 사람 (2주급)</th></tr>${S.jobs.map(j=>{const w=asg(j);return `<tr class="${w.some(a=>a.sid===me)?'meRow':''}">${td(esc(j.dept))}${td(esc(j.name))}<td style="text-align:left">${w.map(a=>names(a.sid)+' ('+payTxt(a)+')').join(', ')||'<span class="mut">모집 안 됨</span>'}</td></tr>`}).join('')}</table></div></div>`}
  return h}
 function tabsHTML(list){return `<div class="tabs">${list.map(([k,n])=>`<button class="${view.tab===k?'on':''}" onclick="view.tab='${k}';render()">${n}</button>`).join('')}</div>`}
-const CCAT={'입금':['tgr','🟩'],'자기 계발':['c-dev','📗'],'우수 활동':['c-merit','⭐'],'공동체 생활':['c-comm','🤝'],'복지비':['c-wel','🎁'],'권리 구매':['c-right','🎟'],'간식':['c-snack','🍬'],'벌금':['c-fine','🚨'],'세금 사용처':['c-taxuse','🏛']};
+const CCAT={'입금':['tgr','🟩'],'자기 계발':['c-dev','📗'],'우수 활동':['c-merit','⭐'],'공동체 생활':['c-comm','🤝'],'복지비':['c-wel','🎁'],'권리 구매':['c-right','🎟'],'주글 면제권':['c-exj','✏️'],'독서록 면제권':['c-exb','📖'],'오늘하루 면제권':['c-ext','☀️'],'간식':['c-snack','🍬'],'벌금':['c-fine','🚨'],'세금 사용처':['c-taxuse','🏛']};
 const ctag=c=>{const [k,i]=CCAT[c]||['tgy','⬜'];return `<span class="tag ${k}">${i} ${esc(c)}</span>`};
 const catChanged=()=>JSON.stringify(S.catalog.items)!==JSON.stringify(S.catalog.live);
 function catShow(items){const one=(kind,title)=>{let n=0;const rows=items.filter(i=>i.kind===kind).map(i=>{n++;return `<tr><td>${n}</td><td style="text-align:left">${ctag(i.cat)} ${esc(i.text)}${i.note?`<div class="mut" style="white-space:normal">${i.note.split(' · ').map(x=>'* '+esc(x)).join('<br>')}</div>`:''}</td><td class="n">${i.unit}</td></tr>`}).join('');
   return `<div class="card"><b>${title}</b><div class="tw"><table><tr><th>번호</th><th>내용</th><th>단위 (구미)</th></tr>${rows||'<tr><td colspan="3" class="mut">항목이 없어요</td></tr>'}</table></div></div>`};
  return one('in','💰 구미 수입처')+one('out','🛒 구미 소비처')}
 function catSet(id,k,v){mut(s=>{const i=s.catalog.items.find(x=>x.id===id);if(i)i[k]=k==='unit'?Math.max(0,Math.round(+v)||0):v})}
+function catMove(id,d){return mut(s=>{const L=s.catalog.items,i=L.findIndex(x=>x.id===id);if(i<0)return;let j=i+d;while(j>=0&&j<L.length&&L[j].kind!==L[i].kind)j+=d;if(j<0||j>=L.length)return;[L[i],L[j]]=[L[j],L[i]]})}
 async function catDel(id){if(!await ask('이 항목을 삭제할까요? (학생에게는 공개할 때 반영돼요)'))return;mut(s=>{s.catalog.items=s.catalog.items.filter(x=>x.id!==id)})}
 function catAdd(){const t=$('#cnt').value.trim();if(!t)return toast('내용을 적어 주세요');mut(s=>s.catalog.items.push({id:uid(),kind:$('#cnk').value,cat:$('#cnc').value,text:t,unit:Math.round(+$('#cnu').value)||0,note:''}))}
 async function catPublish(){if(!await ask('지금 내용을 학생들에게 공개할까요? 학생 화면이 바로 바뀌어요.'))return;mut(s=>{s.catalog.live=JSON.parse(JSON.stringify(s.catalog.items))})}
 async function catHide(){if(!await ask('학생들에게 숨길까요?'))return;mut(s=>{s.catalog.live=null})}
 function catTab(){if(!view.teacher){const l=S.catalog.live;return l?catShow(l):'<div class="card mut">수입처·소비처는 선생님이 준비 중이에요.</div>'}
  const opts=Object.keys(CCAT).map(c=>`<option>${c}</option>`).join('');
- const ed=(kind,title)=>{let n=0;return `<div class="card"><b>${title}</b><div class="tw"><table><tr><th>번호</th><th>분류</th><th>내용</th><th>설명 (· 로 줄 구분)</th><th>단위</th><th></th></tr>${S.catalog.items.filter(i=>i.kind===kind).map(i=>{n++;return `<tr><td>${n}</td><td><select onchange="catSet('${i.id}','cat',this.value)">${Object.keys(CCAT).map(c=>`<option ${i.cat===c?'selected':''}>${c}</option>`).join('')}</select></td><td><input value="${esc(i.text)}" onchange="catSet('${i.id}','text',this.value)" size="26"></td><td><input value="${esc(i.note||'')}" onchange="catSet('${i.id}','note',this.value)" size="20"></td><td><input type="number" value="${i.unit}" style="width:70px" onchange="catSet('${i.id}','unit',this.value)"></td><td><button class="r" onclick="catDel('${i.id}')">삭제</button></td></tr>`}).join('')}</table></div></div>`};
+ const ed=(kind,title)=>{let n=0;return `<div class="card"><b>${title}</b><div class="tw"><table><tr><th>번호</th><th>분류</th><th>내용</th><th>설명 (· 로 줄 구분)</th><th>단위</th><th></th></tr>${S.catalog.items.filter(i=>i.kind===kind).map(i=>{n++;return `<tr><td style="white-space:nowrap">${n} <button class="s" onclick="catMove('${i.id}',-1)">▲</button><button class="s" onclick="catMove('${i.id}',1)">▼</button></td><td><select onchange="catSet('${i.id}','cat',this.value)">${Object.keys(CCAT).map(c=>`<option ${i.cat===c?'selected':''}>${c}</option>`).join('')}</select></td><td><input value="${esc(i.text)}" onchange="catSet('${i.id}','text',this.value)" size="26"></td><td><input value="${esc(i.note||'')}" onchange="catSet('${i.id}','note',this.value)" size="20"></td><td><input type="number" value="${i.unit}" style="width:70px" onchange="catSet('${i.id}','unit',this.value)"></td><td><button class="r" onclick="catDel('${i.id}')">삭제</button></td></tr>`}).join('')}</table></div></div>`};
  const ch=catChanged();
  return `<div class="card"><h2>수입처·소비처 관리</h2><div class="mut">여기서 고치는 내용은 <b>초안</b>이에요. 「학생에게 공개」를 누르고 확인해야 학생 화면에 보여요.</div>
  <div class="row"><span class="tag ${!S.catalog.live?'tgy':ch?'tye':'tgr'}">${!S.catalog.live?'🔒 아직 학생에게 공개 안 됨':ch?'⚠ 수정한 내용이 아직 학생에게 안 보여요':'✅ 학생 화면과 같아요'}</span><button ${ch||!S.catalog.live?'':'class="s"'} onclick="catPublish()">📢 학생에게 공개</button>${S.catalog.live?'<button class="s" onclick="catHide()">숨기기</button>':''}</div>
@@ -561,7 +577,7 @@ function teacherHTML(){
 
 function queue(){
  const n=id=>esc(st(id)?.name||'?');const r=[];
- S.tx.filter(t=>t.status==='wait').forEach(t=>r.push(`<tr><td>${n(t.sid)}</td><td>통장기록: ${esc(t.memo)} (${t.date.slice(5)})</td><td class="${t.type==='in'?'in':'out'}">${t.type==='in'?'+':'-'}${W(t.amt)}</td><td><button class="g" onclick="dec('tx','${t.id}',1)">승인</button> <button class="r" onclick="rej('tx','${t.id}')">반려</button></td></tr>`));
+ S.tx.filter(t=>t.status==='wait').forEach(t=>r.push(`<tr><td>${n(t.sid)}</td><td>통장기록: ${esc(t.memo)} (${t.date.slice(5)})${EXV[catKey(t)]&&t.type==='out'&&exCheck(t.sid,catKey(t),t.date,t.id)?` <span class="out">⚠️ ${esc(exCheck(t.sid,catKey(t),t.date,t.id))}</span>`:''}</td><td class="${t.type==='in'?'in':'out'}">${t.type==='in'?'+':'-'}${W(t.amt)}</td><td><button class="g" onclick="dec('tx','${t.id}',1)">승인</button> <button class="r" onclick="rej('tx','${t.id}')">반려</button></td></tr>`));
  S.deps.filter(d=>d.status==='wait').forEach(d=>r.push(`<tr><td>${n(d.sid)}</td><td>정기예금 가입 신청</td><td>${W(d.amt)}</td><td><button class="g" onclick="dec('dep','${d.id}',1)">승인</button> <button class="r" onclick="rej('dep','${d.id}')">반려</button></td></tr>`));
  S.preq.filter(q=>q.status==='wait').sort((a,b)=>(b.bid||0)-(a.bid||0)).forEach(q=>{const p=S.props.find(x=>x.id===q.prop),cn=S.preq.filter(o=>o.prop===q.prop&&o.status==='wait').length;r.push(`<tr><td>${n(q.sid)}</td><td>부동산 ${esc(p?.name||'')}: ${sn(p?.owner)} → ${n(q.sid)} <span class="mut">공시가 ${W(p?priceOf(p):q.price)} · 희망가 <b>${W(q.bid||q.price)}</b>${cn>1?' · 🔥 경쟁 신청 '+cn+'명':''}${S.props.filter(o=>o.owner===q.sid).length>=1?' · 재산세 20% '+W(Math.round((q.bid||q.price)*0.2)):''}</span></td><td>${W(q.bid||q.price)}</td><td><button class="g" onclick="dec('prq','${q.id}',1)">승인</button> <button class="r" onclick="rej('prq','${q.id}')">반려</button></td></tr>`)});
  dueDeps().forEach(d=>{const rt=d.rate||10,it=Math.round(d.amt*rt/100);r.push(`<tr><td>${n(d.sid)}</td><td>🟧 정기예금 만기 도래 <span class="mut">(${rt}%·${d.weeks||4}주, ${mdD(d.start)}~${mdD(depEnd(d))}) 원금 ${W(d.amt)} + 이자 ${W(it)}</span></td><td class="in">+${W(d.amt+it)}</td><td><button class="g" onclick="matureDep('${d.id}')">만기 지급 승인</button></td></tr>`)});
