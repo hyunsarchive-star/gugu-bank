@@ -105,6 +105,7 @@ function render(){
  const a=$('#app');
  if(!me&&!view.teacher){a.innerHTML=loginHTML();return}
  a.innerHTML=view.teacher?teacherHTML():studentHTML();
+ markGigs();
 }
 function loginHTML(){
  return `<h1>🍠 고구마은행</h1><div class="card"><h2>학생 로그인</h2>
@@ -429,6 +430,10 @@ function jobsTab(){const T=view.teacher,stage=S.job.stage,open=S.mkt.job,td=t=>`
  else{
   h+=`<div class="card"><b>🟢 최종 확정 결과</b><div class="tw"><table><tr><th>부서</th><th>직업</th><th>맡은 사람 (2주급)</th></tr>${S.jobs.map(j=>{const w=asg(j);return `<tr class="${w.some(a=>a.sid===me)?'meRow':''}">${td(esc(j.dept))}${td(esc(j.name))}<td style="text-align:left">${w.map(a=>names(a.sid)+' ('+payTxt(a)+')').join(', ')||'<span class="mut">모집 안 됨</span>'}</td></tr>`}).join('')}</table></div></div>`}
  return h}
+const gseenKey=()=>'gseen_'+me;
+function gseen(){try{return JSON.parse(localStorage.getItem(gseenKey())||'null')}catch(e){return view._gs||null}}
+function newGigs(){if(view.teacher||!me)return 0;const seen=gseen()||[];return view.tab==='gig'?0:S.gigs.filter(g=>g.status==='open'&&!seen.includes(g.id)).length}
+function markGigs(){if(view.teacher||!me||view.tab!=='gig')return;const ids=S.gigs.map(g=>g.id),old=gseen()||[];if(ids.length===old.length&&ids.every(i=>old.includes(i)))return;view._gs=ids;try{localStorage.setItem(gseenKey(),JSON.stringify(ids))}catch(e){}}
 function tabsHTML(list){return `<div class="tabs">${list.map(([k,n])=>`<button class="${view.tab===k?'on':''}" onclick="view.tab='${k}';render()">${n}</button>`).join('')}</div>`}
 const CCAT={'입금':['tgr','🟩'],'자기 계발':['c-dev','📗'],'우수 활동':['c-merit','⭐'],'공동체 생활':['c-comm','🤝'],'복지비':['c-wel','🎁'],'권리 구매':['c-right','🎟'],'주글 면제권':['c-exj','✏️'],'독서록 면제권':['c-exb','📖'],'오늘하루 면제권':['c-ext','☀️'],'간식':['c-snack','🍬'],'벌금':['c-fine','🚨'],'세금 사용처':['c-taxuse','🏛']};
 const ctag=c=>{const [k,i]=CCAT[c]||['tgy','⬜'];return `<span class="tag ${k}">${i} ${esc(c)}</span>`};
@@ -485,10 +490,21 @@ const RS={
  gig:{n:'아르바이트',it:[{k:'gigs',n:'아르바이트 공고 (종료 포함)',cnt:s=>s.gigs.length,ms:s=>s.gigs.map(x=>mo(x.date)),all:s=>{s.gigs=[]},m:(s,m)=>{s.gigs=s.gigs.filter(x=>mo(x.date)!==m)}}]}};
 function dlFile(name,mime,text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:mime}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 function backupJSON_local(){const c=JSON.parse(JSON.stringify(S));delete c.tpin;c.students.forEach(s=>{delete s.pin});dlFile(`고구마은행_전체백업_${today()}.json`,'application/json',JSON.stringify({app:'gugu-bank',saved:new Date().toISOString(),data:c},null,1));toast('백업 파일을 만들었어요')}
-async function backupJSON(){if(!view.teacher||!TOKEN)return;let r;try{r=await fetch('/api/backup',{headers:{Authorization:'Bearer '+TOKEN},cache:'no-store'})}catch(e){return toast('서버에 연결할 수 없어요')}
+async function backupFile(){if(!view.teacher||!TOKEN)return;let r;try{r=await fetch('/api/backup',{headers:{Authorization:'Bearer '+TOKEN},cache:'no-store'})}catch(e){return toast('서버에 연결할 수 없어요')}
  if(!r.ok){let j={};try{j=await r.json()}catch(e){}return toast('백업 실패: '+(j.error||r.status))}
  const cd=r.headers.get('Content-Disposition')||'',m=/filename="([^"]+)"/.exec(cd),d=new Date(Date.now()+9*36e5).toISOString(),name=m?m[1]:`gugu-bank-backup-${d.slice(0,10)}-${d.slice(11,13)}${d.slice(14,16)}.json`;
  dlFile(name,'application/json',await r.text());toast('백업 파일을 만들었어요')}
+async function loadBk(){if(!view.teacher||!TOKEN)return;try{const r=await fetch('/api/backup?info=1',{headers:{Authorization:'Bearer '+TOKEN},cache:'no-store'});if(r.ok)view.bk=await r.json();else view.bk={exists:false}}catch(e){view.bk=view.bk||{exists:false}}render()}
+function bkText(){const b=view.bk;if(!b)return '확인 중…';return b.exists?`${whenKST(b)} (학생 ${b.students}명 · 통장 기록 ${b.tx}건)`:'아직 서버에 저장한 백업이 없어요'}
+let bkBusy=false;
+async function backupJSON(){if(!view.teacher||!TOKEN||bkBusy)return;bkBusy=true;let r;try{r=await api('backup',{method:'POST'})}catch(e){bkBusy=false;return toast('서버에 연결할 수 없어요')}bkBusy=false;
+ if(r.status===200&&r.j&&r.j.ok){view.bk={exists:true,backupAt:r.j.backupAt,backupAtKST:r.j.backupAtKST,rev:r.j.rev,students:r.j.students,tx:r.j.tx};render();toast(`서버에 백업했어요 (${whenKST(r.j)})`)}
+ else toast('백업 실패: '+((r.j&&r.j.error)||r.status))}
+async function restoreServer(){if(!view.teacher||!TOKEN)return;if(!view.bk||!view.bk.exists)return toast('서버에 저장된 백업이 없어요');
+ if(!await ask(`서버에 저장된 백업(${whenKST(view.bk)} 시점)으로 현재 데이터를 덮어씁니다. 계속하시겠습니까?`))return;
+ const r=await api('restore',{method:'POST',body:{server:true}});
+ if(r.status===200&&r.j&&r.j.ok){const l=await fetchState();if(l)S=norm(l);rstMsg(true,`✅ 복원을 완료했습니다! ${esc(whenKST(view.bk))} 시점의 서버 백업으로 돌아갔어요. 복원 전 데이터는 서버에 안전 백업(${esc(r.j.safetyKey||'없음')})으로 보관했어요.`);await notice(`복원을 완료했습니다.\n\n${whenKST(view.bk)} 시점의 데이터로 돌아갔어요.`)}
+ else{const e=(r.j&&r.j.error)||'서버에 연결할 수 없어요.';rstMsg(false,`❌ 복원 실패: ${esc(e)}${/그대로예요/.test(e)?'':' 현재 데이터는 그대로예요.'}`)}}
 // ───── 백업 복원 (교사 전용) ─────
 // 파일 선택 칸은 화면이 자동 갱신돼도 사라지지 않게 #app 밖에 한 번만 만들어 둬요 (교사가 「백업 복원」을 누를 때만 쓰여요)
 function pickRestore(){if(!view.teacher||!TOKEN)return;let f=document.getElementById('rf');if(!f){f=document.createElement('input');f.type='file';f.id='rf';f.accept='.json,application/json';f.style.display='none';f.onchange=()=>restoreFile(f);document.body.appendChild(f)}f.value='';f.click()}
@@ -510,7 +526,7 @@ function backupCSV(){const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"',stt={ok
  S.students.forEach(s=>S.tx.filter(t=>t.sid===s.id).slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0).forEach(t=>rows.push([s.name,t.date,t.memo,t.type==='in'?'입금':'출금',t.type==='in'?t.amt:'',t.type==='in'?'':t.amt,stt[t.status]||t.status,t.reason||''])));
  dlFile(`고구마은행_통장내역_${today()}.csv`,'text/csv;charset=utf-8','\ufeff'+rows.map(r=>r.map(q).join(',')).join('\r\n'));toast('통장 내역 파일을 만들었어요')}
 function resetTab(){const ml=m=>m.slice(0,4)+'년 '+(+m.slice(5))+'월';
- return rstBox()+`<div class="card"><h2>💾 학생 자료 백업</h2><div class="mut">지우기 전에 꼭 백업해 두세요. 파일이 내 컴퓨터에 저장돼요.</div><div class="row"><button class="g" onclick="backupJSON()">💾 데이터 백업 (.json)</button><button class="s" onclick="pickRestore()">📂 백업 복원</button><button onclick="backupCSV()">📄 학생 통장 내역 (.csv · 엑셀용)</button></div><div class="mut">전체 백업에는 학생·통장·예금·주식·부동산·직업·아르바이트 등 모든 자료가 들어 있어요 (비밀번호는 원문 없이 암호화된 값으로만 들어가요). 복원은 백업 파일로 현재 데이터를 통째로 바꿔요. 복원 직전 현재 데이터는 자동으로 따로 보관돼요.. 통장 내역 파일은 학생별 입출금 기록을 엑셀로 열 수 있어요.</div></div>
+ return rstBox()+`<div class="card"><h2>💾 학생 자료 백업</h2><div class="mut">지우기 전에 꼭 백업해 두세요. 「데이터 백업」은 파일을 내려받지 않고 서버 안에 한 번 저장해요 (다시 누르면 최신 내용으로 바뀌어요).</div><div class="card" style="background:var(--bg,#fafafa)">🕒 <b>가장 최근 서버 백업</b>: ${bkText()}</div><div class="row"><button class="g" onclick="backupJSON()">💾 데이터 백업 (서버에 저장)</button><button class="s" onclick="restoreServer()">♻️ 서버 백업으로 복원</button><button class="s" onclick="backupFile()">⬇️ 백업 파일 내려받기 (.json)</button><button class="s" onclick="pickRestore()">📂 파일로 복원</button><button onclick="backupCSV()">📄 학생 통장 내역 (.csv · 엑셀용)</button></div><div class="mut">전체 백업에는 학생·통장·예금·주식·부동산·직업·아르바이트 등 모든 자료가 들어 있어요 (비밀번호는 원문 없이 암호화된 값으로만 들어가요). 복원은 백업 파일로 현재 데이터를 통째로 바꿔요. 복원 직전 현재 데이터는 자동으로 따로 보관돼요.. 통장 내역 파일은 학생별 입출금 기록을 엑셀로 열 수 있어요.</div></div>
  <div class="card"><h2>🧹 탭 관리 (데이터 삭제)</h2><div class="mut">탭마다 내용을 월별로 지우거나 전부 지울 수 있어요. 학생 명단·비밀번호·주식 종목·직업 목록·자리 목록·수입처/소비처는 지워지지 않아요. 지운 뒤에는 되돌릴 수 없어요.</div></div>`+
  Object.values(RS).map(g=>`<div class="card"><b>${g.n}</b><div class="tw"><table><tr><th>항목</th><th>개수</th><th>월별 삭제</th><th>전체 삭제</th></tr>${g.it.map(i=>{const ms=i.ms?[...new Set(i.ms(S).filter(Boolean))].sort():[];return `<tr><td>${i.n}</td><td class="n">${i.cnt(S)}</td><td>${i.m?(ms.length?`<select id="rm_${i.k}">${ms.map(m=>`<option value="${m}">${ml(m)}</option>`).join('')}</select> <button class="r" onclick="resetItem('${i.k}','m')">월 삭제</button>`:'<span class="mut">-</span>'):'<span class="mut">월별 없음</span>'}</td><td><button class="r" onclick="resetItem('${i.k}','all')">전체 삭제</button></td></tr>`}).join('')}</table></div></div>`).join('')+
  `<div class="card"><b>⚠️ 모든 탭 한꺼번에</b><div class="mut">학생 명단과 설정만 남기고 모든 기록을 지워요.</div><button class="r" onclick="resetAll()">전부 지우기</button></div>`}
@@ -595,16 +611,18 @@ function aucTab(){const T=view.teacher,nn=id=>esc(st(id)?.name||'?');
 function studentHTML(){const s=st(me);
  return `<div class="top"><h1>🍠 ${esc(s.name)}의 통장${roleOf(me)?` <span class="tag t2">🏅 ${roleOf(me)}</span>`:''}</h1><button class="s" onclick="logout()">나가기</button></div>
  ${assetCard(me)}
- ${tabsHTML([['ledger','입출금 통장'],['pending','승인 대기'+(myPend().tx.length+myPend().dep.length?` (${myPend().tx.length+myPend().dep.length})`:'')],['dep','예금'],['cat','수입처·소비처'],['job','직업'],['stock','주식'],['prop','부동산'],['gig','아르바이트'],['auction','경매']])}
+ ${tabsHTML([['ledger','입출금 통장'],['pending','승인 대기'+(myPend().tx.length+myPend().dep.length?` (${myPend().tx.length+myPend().dep.length})`:'')],['dep','예금'],['cat','수입처·소비처'],['job','직업'],['stock','주식'],['prop','부동산'],['gig','아르바이트'+(newGigs()?` (${newGigs()})`:'')],['auction','경매']])}
  ${view.tab==='ledger'?ledger(me,true):view.tab==='pending'?pendTab():view.tab==='dep'?deposits(me,true):view.tab==='prop'?props(me,true):view.tab==='job'?jobsTab():view.tab==='gig'?gigTab():view.tab==='auction'?aucTab():view.tab==='cat'?catTab():stocks(me,true)}`}
 
 function teacherHTML(){
  const pend=S.preq.filter(t=>t.status==='wait').length+S.tx.filter(t=>t.status==='wait').length+S.deps.filter(d=>d.status==='wait').length+dueDeps().length+cands().length;
+ if(view.bk===undefined){view.bk=null;loadBk()}
  let body='';
  if(view.tab==='queue')body=queue();else if(view.tab==='reset')body=resetTab();else if(view.tab==='auction')body=aucTab();else if(view.tab==='depadm')body=depAdmin();else if(view.tab==='pay')body=payHTML();else if(view.tab==='stu')body=manageStu();else if(view.tab==='stk')body=manageStk()+'<h2>👀 학생에게 보이는 화면 (삭제 버튼 포함)</h2>'+stocks(null,false);else if(view.tab==='estate')body=estateTab();else if(view.tab==='job')body=jobsTab();else if(view.tab==='cat')body=catTab();else if(view.tab==='gig')body=gigTab();
  else{const sel=`<div class="row"><select onchange="view.sid=this.value;render()"><option value="">학생 선택</option>${S.students.map(s=>`<option value="${s.id}" ${view.sid===s.id?'selected':''}>${esc(s.name)} (${W(bal(s.id))})</option>`).join('')}</select></div>`;
   body=sel+(view.sid&&st(view.sid)?assetCard(view.sid)+`<div class="tabs"><button class="s" onclick="view.sub='ledger';render()">입출금</button><button class="s" onclick="view.sub='dep';render()">예금</button><button class="s" onclick="view.sub='stock';render()">주식</button><button class="s" onclick="view.sub='prop';render()">부동산</button></div>`+((view.sub||'ledger')==='ledger'?ledger(view.sid,false):view.sub==='dep'?deposits(view.sid,false):view.sub==='prop'?props(view.sid,false):stocks(view.sid,false)):'<div class="mut">학생을 선택하면 통장을 볼 수 있어요.</div>')}
- return `<div class="top"><h1>👩‍🏫 교사 화면</h1><span><button class="g" onclick="backupJSON()">💾 데이터 백업</button> <button class="s" onclick="pickRestore()">📂 백업 복원</button> <button class="s" onclick="logout()">나가기</button></span></div>
+ return `<div class="top"><h1>👩‍🏫 교사 화면</h1><span><button class="g" onclick="backupJSON()">💾 데이터 백업</button> <button class="s" onclick="pickRestore()">📂 파일로 복원</button> <button class="s" onclick="logout()">나가기</button></span></div>
+ <div class="mut" style="text-align:right;margin:-6px 0 8px">🕒 마지막 서버 백업: ${bkText()}</div>
  ${mktCtl()}${tabsHTML([['queue','승인 대기 '+(pend?`(${pend})`:'')],['view','학생 통장 보기'],['pay','지급/징수'],['depadm','예금'],['cat','수입처·소비처'],['job','직업'],['stk','주식 관리'],['gig','아르바이트'],['estate','부동산 관리'],['auction','경매'],['stu','학생 관리'],['reset','탭 관리']])}${body}`}
 
 function queue(){

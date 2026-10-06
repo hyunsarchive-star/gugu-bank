@@ -50,7 +50,13 @@ export async function onRequestPost({ request, env }) {
   } catch (e) {
     return json({ ok: false, error: '잘못된 요청이에요' }, 400);
   }
-  const backup = body && body.backup;
+  let backup = body && body.backup;
+  if (body && body.server) {
+    // 서버에 저장해 둔 가장 최근 백업으로 복원
+    const raw = await env.BANK.get('backup-latest');
+    if (!raw) return json({ ok: false, error: '서버에 저장된 백업이 없어요. 현재 데이터는 그대로예요.' }, 404);
+    try { backup = JSON.parse(raw); } catch (e) { return json({ ok: false, error: '서버 백업을 읽지 못했어요. 현재 데이터는 그대로예요.' }, 500); }
+  }
 
   // ② 검증 (실패하면 여기서 끝, 아무것도 바꾸지 않음)
   const bad = validate(backup);
