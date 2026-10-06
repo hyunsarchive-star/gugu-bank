@@ -1,67 +1,98 @@
-# 🍠 고구마은행 (학생 통장 웹앱)
+# 우리 반 과제함 (웹 버전)
 
-학생은 URL만 열면 되고(Claude 로그인 불필요), 데이터는 Cloudflare KV 에 저장돼서
-여러 기기에서 함께 쓰고, 새로고침해도 유지돼요.
+학생들이 Claude 로그인 없이 **주소(URL)만으로** 쓰는 학급 웹앱이에요.
+화면은 HTML/CSS/JavaScript, 저장은 **Cloudflare Pages Functions + D1**을 써요.
+여러 학생이 각자 다른 기기에서 들어와도 같은 데이터를 보고, 새로고침해도 그대로 남아요.
 
 ## 폴더 구조
+
 ```
-gugu-bank-web/
-├─ public/
-│   └─ index.html          ← 화면 전체 (학생 화면 + 교사 화면)
-├─ functions/
-│   ├─ _lib/util.js        ← 로그인 토큰·비밀번호 해시·KV 읽기/쓰기 부품
-│   └─ api/
-│       ├─ roster.js       ← GET  /api/roster       (로그인 화면의 학생 이름 목록)
-│       ├─ login.js        ← POST /api/login        (학생 로그인 / 첫 비밀번호 만들기)
-│       ├─ admin-login.js  ← POST /api/admin-login  (교사 로그인)
-│       ├─ state.js        ← GET/PUT /api/state     (전체 데이터 읽기/저장)
-│       ├─ backup.js       ← GET /api/backup        (교사 전용 전체 백업 JSON 다운로드)
-│       └─ restore.js      ← POST /api/restore      (교사 전용 백업 복원)
-├─ .dev.vars.example       ← (내 컴퓨터 시험용 예시)
-├─ .gitignore
-└─ README.md
+uri-ban/
+├── public/                  ← 화면 (Cloudflare Pages 출력 폴더)
+│   ├── index.html           ← 앱 전체 화면 (학생 화면 + 선생님 화면)
+│   └── db.js                ← 서버와 데이터를 주고받는 연결 코드
+├── functions/
+│   └── api/
+│       └── [[path]].js      ← 서버 (/api/... 주소 전부 처리)
+├── schema.sql               ← 데이터베이스 표 구조 (참고용, 자동 생성돼요)
+└── README.md                ← 이 설명서
 ```
 
-## 배포 순서 (GitHub + Cloudflare Pages)
-1. 이 폴더 전체를 GitHub 새 저장소(repository)에 올려요. (폴더 안의 파일들이 저장소 맨 위에 오게)
-2. Cloudflare 대시보드 → **Workers & Pages → Create → Pages → Connect to Git** → 저장소 선택.
-3. 빌드 설정: **Framework preset: None**, **Build command: (비워 둠)**, **Build output directory: `public`** → Save and Deploy.
-4. **KV 만들기**: Workers & Pages → **KV → Create a namespace** → 이름 `gugu-bank`.
-5. Pages 프로젝트 → **Settings → Bindings(또는 Functions) → Add → KV namespace**
-   - Variable name: **`BANK`** (꼭 이 이름, 대문자)
-   - KV namespace: 방금 만든 `gugu-bank`
-   - Production(과 Preview) 모두 설정.
-6. 같은 화면 **Settings → Variables and Secrets** 에 추가 (Secret/암호화 권장):
-   - **`ADMIN_PASSWORD`** = 교사 비밀번호
-   - **`SESSION_SECRET`** = 아무 긴 문자열 (로그인 표를 만드는 비밀 값. 예: 영문+숫자 30자)
-7. **Deployments → 가장 위 배포 → Retry deployment** (변수·바인딩은 다시 배포해야 적용돼요).
-8. 발급된 `https://프로젝트이름.pages.dev` 주소를 학생들에게 알려 주면 끝!
+> `[[path]].js` 는 대괄호 두 개까지 **파일 이름 그대로** 써야 해요.
 
-## 처음 사용
-1. 주소를 열고 **교사 로그인** → ADMIN_PASSWORD 입력.
-2. **학생 관리** 탭에서 학생 이름 등록. (이 전에는 학생들이 로그인할 수 없어요)
-3. 학생은 이름 선택 → **처음 들어올 때 비밀번호(4자 이상)를 직접 만들어요.**
-4. 학생이 비밀번호를 잊으면 학생 관리 → 비밀번호 **초기화**.
+## 배포 순서 (한 번만 하면 돼요)
 
-## 내 컴퓨터에서 시험해 보기 (선택)
-Node.js 설치 후, 이 폴더에서:
-```
-cp .dev.vars.example .dev.vars      # 값 채우기
-npx wrangler pages dev public --kv=BANK
-```
+### 1. GitHub에 올리기
+1. GitHub에서 **New repository** → 이름(예: `uri-ban`) → **Private** 추천 → Create.
+2. **Add file → Upload files** 에서 `uri-ban` 폴더 **안의 내용**(public, functions, schema.sql, README.md)을 끌어다 놓고 **Commit changes**.
+3. 올린 뒤 `functions/api/[[path]].js` 경로가 그대로인지 확인해요.
 
-## 앱 방식 메모
-- 비밀번호는 해시로만 저장되고 브라우저로 내려가지 않아요. 교사 비밀번호는 코드/데이터에 없고 환경변수에만 있어요.
-- 로그인 표는 24시간 유효, 브라우저 탭을 닫으면 다시 로그인해요(sessionStorage). 데이터는 localStorage에 저장하지 않아요.
-- 화면은 4초마다 자동으로 최신 데이터로 갱신돼요. 두 명이 동시에 저장하면 서버가 충돌을 감지해 자동으로 다시 시도해요.
-- 학생 계정은 시장 열기/닫기·종목·직업 목록·수입처 같은 교사 전용 항목을 서버에서 바꿀 수 없게 막아 두었어요.
+### 2. Cloudflare Pages 만들기
+1. Cloudflare 대시보드 → **Workers & Pages → Create → Pages → Connect to Git**.
+2. 방금 만든 저장소 선택.
+3. 빌드 설정:
+   - Framework preset: **None**
+   - Build command: **(비워 두기)**
+   - Build output directory: **`public`**
+4. **Save and Deploy**.
 
-## 데이터 백업
-교사 화면 오른쪽 위 **💾 데이터 백업** (또는 탭 관리의 백업 카드)을 누르면 `gugu-bank-backup-YYYY-MM-DD-HHmm.json` 파일이 내려받아져요. 파일에는 백업 시각과 rev(저장 번호)가 들어 있고, 학생 비밀번호는 원문이 아닌 암호화된 값만 그대로 들어 있어요. 교사 로그인 상태에서만 동작하고 학생 계정은 403으로 막혀요. 백업은 읽기만 해서 데이터를 바꾸지 않아요.
+### 3. D1 데이터베이스 만들고 연결하기
+1. 대시보드 → **Storage & Databases → D1 → Create database** → 이름 `uri-ban-db`.
+2. Pages 프로젝트 → **Settings → Bindings → Add → D1 database**
+   - Variable name: **`DB`** (꼭 대문자 DB)
+   - D1 database: `uri-ban-db`
+3. 표는 첫 접속 때 자동으로 만들어져요. 따로 SQL을 실행하지 않아도 돼요.
 
-## 백업 복원
-교사 화면 **📂 백업 복원** → 「💾 데이터 백업」으로 만든 `.json` 파일 선택 → 확인창에서 「계속」.
-1. 파일이 이 앱의 정상 백업인지 검사해요 (틀리면 여기서 멈추고 현재 데이터는 그대로예요).
-2. 현재 데이터를 서버(KV)에 `safety-날짜-시각-rev번호` 라는 이름으로 따로 보관하고, 내 컴퓨터에도 `…before-restore….json` 파일로 한 번 더 내려받아요.
-3. 그 다음에야 백업 내용으로 교체하고, 저장 번호(rev)는 현재보다 크게 올려요.
-잘못 복원했으면 2번에서 내려받은 파일을 다시 복원하면 돼요. 비밀번호 암호값은 `SESSION_SECRET` 과 함께 만들어지므로, 복원할 때도 같은 SESSION_SECRET 을 유지해야 학생들이 기존 비밀번호로 들어와요.
+### 4. 환경변수(비밀번호) 넣기
+Pages 프로젝트 → **Settings → Variables and Secrets → Add** (Type은 **Secret**)
+
+| 이름 | 내용 | 필수 |
+|---|---|---|
+| `ADMIN_PASSWORD` | 선생님 비밀번호 | 꼭 필요 |
+| `SESSION_SECRET` | 아무 긴 글자 (예: 무작위 40자). 로그인 정보를 서명하는 데 써요 | 권장 |
+
+비밀번호는 코드 안에 없고 여기에만 저장돼요. 바꾸고 싶으면 여기서 값을 바꾸면 돼요.
+(`SESSION_SECRET`을 넣지 않으면 `ADMIN_PASSWORD`로 대신 서명해요. 비밀번호를 바꾸면 모두 다시 로그인해야 해요.)
+
+### 5. 다시 배포
+바인딩과 환경변수는 **새 배포부터** 적용돼요.
+Pages 프로젝트 → **Deployments → 최신 배포의 ⋯ → Retry deployment**.
+
+### 6. 확인
+- `https://프로젝트이름.pages.dev/api/health` 에 들어가서 `{"ok":true,"configured":true}` 가 보이면 성공이에요.
+- 사이트에 들어가 오른쪽 위 **🔒 선생님 로그인** → `ADMIN_PASSWORD` → **학생 관리** 탭에서 명단을 등록해요.
+- 학생들에게는 같은 주소만 알려 주면 돼요. 처음 이름을 누르면 각자 비밀번호를 만들어요.
+
+## Claude 버전에서 데이터 옮기기
+1. Claude에 있던 과제함 → **학생 관리 → 파일로 내려받기**
+2. 웹 버전에서 선생님 로그인 → **학생 관리 → 파일에서 복원** → 그 파일 선택
+학생 명단, 학생 비밀번호, 과제·사진·체크 기록이 그대로 옮겨져요.
+
+## 저장 방식과 권한 (서버가 직접 지켜요)
+- 모든 데이터는 D1의 `docs` 표에 저장되고, 화면은 `/api/sync` 로 실시간(1~2초 안)으로 바뀐 내용만 받아와요.
+- **로그인 전:** 학생 이름 목록만 볼 수 있어요.
+- **학생:** 자기 제출물, 자기 체크, 자기 답만 저장할 수 있어요. 친구 글에는 ❤️만 누를 수 있어요. 누가기록·백업은 볼 수 없어요.
+- **검사 도우미 학생:** 맡은 할 일의 친구 칸만, 맡은 기간 동안만 체크할 수 있어요.
+- **선생님:** 모든 것을 보고 바꿀 수 있어요.
+- 학생 비밀번호는 암호화된 값으로만 저장되고, 선생님도 원래 비밀번호는 볼 수 없어요. 초기화만 할 수 있어요.
+- 비밀번호를 5번 틀리면 30초 동안 막혀요.
+
+## API 목록 (`/api/...`)
+| 주소 | 하는 일 |
+|---|---|
+| `GET /api/health` | 서버 상태 확인 |
+| `POST /api/login` | 선생님 로그인 (`ADMIN_PASSWORD`) |
+| `POST /api/student/login` | 학생 로그인 (번호 + 비밀번호) |
+| `POST /api/student/setpin` | 학생 비밀번호 만들기 / 바꾸기 |
+| `GET /api/sync?since=` | 바뀐 데이터 받아오기 (실시간) |
+| `GET /api/list?col=` | 한 종류 전체 읽기 (사진, 백업 등) |
+| `GET /api/doc?col=&id=` | 문서 하나 읽기 |
+| `POST /api/write` | 저장 / 고치기 / 지우기 |
+
+## 무료 사용량 참고 (Cloudflare 무료 요금제 기준)
+- Pages Functions 요청: 하루 10만 번. 화면 하나가 1분에 약 3번 요청해요. 한 반(25명)이 하루 종일 켜 두어도 넉넉해요.
+- D1: 저장 5GB, 하루 쓰기 10만 번, 읽기 500만 행.
+- 사진은 한 장에 약 200KB로 줄여서 저장해요.
+
+## 서버 없이 화면만 보기
+`public/index.html` 을 그냥 열면 서버가 없어서 **체험 모드**로 열려요. 화면은 다 보이지만 새로고침하면 사라져요.
